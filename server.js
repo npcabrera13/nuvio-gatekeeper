@@ -3,8 +3,8 @@ const path = require('path');
 const app = express();
 const handler = require('./api/[...path].js');
 
-// Serve static files (Admin UI) from the root
-app.use(express.static(__dirname));
+// Serve static files (Admin UI) from the public/ folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Intercept Stremio paths
 const stremioPaths = ['/manifest.json', '/catalog', '/stream', '/meta'];
