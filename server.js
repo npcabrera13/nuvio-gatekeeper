@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const app = express();
-const handler = require('./api/[...path].js');
+const handler = require('./api/proxy.js');
 
 // Serve static files (Admin UI) from root
 app.use(express.static(__dirname));

@@ -2,10 +2,10 @@
   "version": 2,
   "buildCommand": "",
   "rewrites": [
-    { "source": "/manifest.json",  "destination": "/api/manifest.json" },
-    { "source": "/catalog/:path*", "destination": "/api/catalog/:path*" },
-    { "source": "/stream/:path*",  "destination": "/api/stream/:path*" },
-    { "source": "/meta/:path*",    "destination": "/api/meta/:path*" }
+    { "source": "/manifest.json",  "destination": "/api/proxy" },
+    { "source": "/catalog/:path*", "destination": "/api/proxy" },
+    { "source": "/stream/:path*",  "destination": "/api/proxy" },
+    { "source": "/meta/:path*",    "destination": "/api/proxy" }
   ],
   "headers": [
     {
