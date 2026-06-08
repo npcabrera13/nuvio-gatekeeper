@@ -90,18 +90,12 @@ module.exports = async function handler(req, res) {
   // ── 3. Build the upstream Torrentio URL ───────────────────────────────
   // req.query.path is an array of path segments captured by [...path].js
   // e.g. ["stream", "movie", "tt1234567.json"]
-  let upstreamPath = "";
-  if (req.query.path) {
-    upstreamPath = Array.isArray(req.query.path)
-      ? req.query.path.join("/")
-      : req.query.path;
-  } else {
-    // Fallback: parse the path from the request URL (needed for Vercel rewrites)
-    const url = require("url");
-    const parsedPath = url.parse(req.url).pathname || "";
-    upstreamPath = parsedPath
-      .replace(/^\/api/, "")       // Remove leading /api if present
-      .replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+  let upstreamPath = req.query.prefix || "";
+  if (req.query.p) {
+    const suffix = Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p;
+    if (suffix) {
+      upstreamPath += "/" + suffix;
+    }
   }
 
   const targetUrl = `${TORRENTIO_BASE}/${upstreamPath}`;
