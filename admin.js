@@ -343,7 +343,7 @@ window.toggleStatus = async (id, newStatus) => {
 // ── Copy Link ───────────────────────────────────────────────────────────────
 window.copyLink = (id) => {
     const baseUrl = window.location.origin;
-    const link = `${baseUrl}/manifest.json?token=${id}`;
+    const link = `${baseUrl}/${id}/manifest.json`;
     navigator.clipboard.writeText(link)
         .then(() => showToast('📋 Stremio link copied!'))
         .catch(() => showToast('❌ Could not copy. Try manually.'));
