@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "public",
+  "buildCommand": "",
   "rewrites": [
     { "source": "/manifest.json",  "destination": "/api/manifest.json" },
     { "source": "/catalog/:path*", "destination": "/api/catalog/:path*" },
@@ -11,7 +11,7 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
       ]
