@@ -923,7 +923,38 @@ input[type="date"].form-input {
     .stat-card {
         flex-direction: row;
         text-align: left;
-        padding: 0.75rem 1rem;
+    }
+}
+
+/* ── Mobile Performance Optimizations ── */
+@media (max-width: 768px) {
+    /* Disable expensive blur filters on mobile to prevent scroll lag */
+    .glass-card, .overlay, .modal {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: #1a1e27 !important;
+    }
+    
+    .overlay {
+        background: rgba(0, 0, 0, 0.95) !important;
+    }
+
+    .glass-card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .table-wrap {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
+    
+    .stat-card:hover, .btn:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    .stat-card:active, .btn:active {
+        transform: scale(0.98) !important;
     }
 }
 
