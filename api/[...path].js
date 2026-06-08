@@ -90,12 +90,22 @@ module.exports = async function handler(req, res) {
   // ── 3. Build the upstream Torrentio URL ───────────────────────────────
   // req.query.path is an array of path segments captured by [...path].js
   // e.g. ["stream", "movie", "tt1234567.json"]
-  const pathSegments = req.query.path;
-  const upstreamPath = Array.isArray(pathSegments)
-    ? pathSegments.join("/")
-    : pathSegments || "";
+  let upstreamPath = "";
+  if (req.query.path) {
+    upstreamPath = Array.isArray(req.query.path)
+      ? req.query.path.join("/")
+      : req.query.path;
+  } else {
+    // Fallback: parse the path from the request URL (needed for Vercel rewrites)
+    const url = require("url");
+    const parsedPath = url.parse(req.url).pathname || "";
+    upstreamPath = parsedPath
+      .replace(/^\/api/, "")       // Remove leading /api if present
+      .replace(/^\/+|\/+$/g, ""); // Remove leading/trailing slashes
+  }
 
   const targetUrl = `${TORRENTIO_BASE}/${upstreamPath}`;
+  console.log(`[Proxy Request] Path: ${upstreamPath} | Token: ${token} | Target: ${targetUrl}`);
 
   // ── 4. Fetch from Torrentio and proxy the response ────────────────────
   try {
@@ -106,6 +116,8 @@ module.exports = async function handler(req, res) {
         Accept: "application/json",
       },
     });
+
+    console.log(`[Proxy Response] Target: ${targetUrl} | Status: ${upstream.status}`);
 
     const contentType = upstream.headers.get("content-type");
     const body = await upstream.text();
