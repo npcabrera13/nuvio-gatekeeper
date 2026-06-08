@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/manifest.json", "destination": "/api/[...path]?path=manifest.json" },
+    { "source": "/catalog/:path*",  "destination": "/api/[...path]?path=catalog/:path*" },
+    { "source": "/stream/:path*",   "destination": "/api/[...path]?path=stream/:path*" },
+    { "source": "/meta/:path*",     "destination": "/api/[...path]?path=meta/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ]
+}

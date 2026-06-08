@@ -1,0 +1,10 @@
+{
+  "name": "nuvio-stream-api",
+  "version": "1.0.0",
+  "description": "Secure reverse-proxy gatekeeper for Nuvio/Stremio streaming via Torrentio",
+  "private": true,
+  "dependencies": {
+    "express": "^5.2.1",
+    "firebase": "^10.12.0"
+  }
+}

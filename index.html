@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuvio Gatekeeper Admin</title>
+    <meta name="description" content="Nuvio Gatekeeper - Manage your Stremio addon access tokens">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Password Login Overlay -->
+    <div id="login-overlay" class="overlay active">
+        <div class="login-card glass-card">
+            <div class="login-logo">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#60a5fa"/><stop offset="100%" style="stop-color:#a78bfa"/></linearGradient></defs>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span class="gradient-text">Nuvio Gatekeeper</span>
+            </div>
+            <p class="login-subtitle">Enter your admin password to continue</p>
+            <input type="password" id="password-input" class="form-input" placeholder="Password" autocomplete="current-password">
+            <button id="login-btn" class="btn btn-primary btn-full">Unlock Dashboard</button>
+            <p id="login-error" class="error-text"></p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
+
+        <!-- Header -->
+        <header class="header glass-card">
+            <div class="header-brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#grad2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <defs><linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#60a5fa"/><stop offset="100%" style="stop-color:#a78bfa"/></linearGradient></defs>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span class="gradient-text">Nuvio Gatekeeper</span>
+            </div>
+            <div class="header-create">
+                <input type="text" id="new-user-name" class="form-input" placeholder="Customer name...">
+                <input type="number" id="new-user-days" class="form-input days-input" placeholder="Days" value="30" min="1">
+                <button id="generate-btn" class="btn btn-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    New Token
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card glass-card">
+                <div class="stat-icon stat-icon-blue">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <div>
+                    <div class="stat-label">Total</div>
+                    <div class="stat-value" id="total-users">0</div>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon stat-icon-green">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <div>
+                    <div class="stat-label">Active</div>
+                    <div class="stat-value stat-green" id="active-users">0</div>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon stat-icon-red">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                </div>
+                <div>
+                    <div class="stat-label">Blocked</div>
+                    <div class="stat-value stat-red" id="blocked-users">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Table -->
+        <div class="table-card glass-card">
+            <div class="table-header">
+                <h2>Customer Tokens</h2>
+            </div>
+            <div id="loading-spinner" class="spinner"></div>
+            <div class="table-wrap">
+                <table id="customers-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Token ID</th>
+                            <th>Expires</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-body"></tbody>
+                </table>
+                <div id="empty-state" class="empty-state hidden">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <p>No customers yet. Create one above!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Edit Customer</h3>
+                <button class="btn-icon" onclick="closeModal('edit-modal')" title="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <input type="hidden" id="edit-id">
+            <label class="form-label">Customer Name</label>
+            <input type="text" id="edit-name" class="form-input" placeholder="e.g. John Smith">
+            <label class="form-label">Token ID (API Key)
+                <span class="form-label-hint">⚠ Changing this regenerates the token — old links will break</span>
+            </label>
+            <input type="text" id="edit-token-id" class="form-input form-mono" placeholder="e.g. nuvio_abc123xyz">
+            <label class="form-label">Expiration Date</label>
+            <input type="date" id="edit-expires" class="form-input">
+            <label class="form-label">Notes</label>
+            <textarea id="edit-notes" class="form-input form-textarea" placeholder="e.g. Paid via Cashapp, VIP customer" rows="3"></textarea>
+            <div class="modal-actions">
+                <button id="save-edit-btn" class="btn btn-success btn-full">Save Changes</button>
+                <button class="btn btn-ghost btn-full" onclick="closeModal('edit-modal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Renew Modal -->
+    <div id="renew-modal" class="overlay">
+        <div class="modal glass-card">
+            <div class="modal-header">
+                <h3>Adjust Access</h3>
+                <button class="btn-icon" onclick="closeModal('renew-modal')" title="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <p id="renew-title" class="modal-subtitle"></p>
+            <input type="hidden" id="renew-id">
+            <input type="hidden" id="renew-current-expiry">
+
+            <!-- Current expiry preview -->
+            <div class="renew-info-box">
+                <span class="renew-info-label">Current expiry</span>
+                <span id="renew-current-display" class="renew-info-value">—</span>
+            </div>
+            <div class="renew-info-box renew-info-preview" id="renew-preview-box">
+                <span class="renew-info-label">New expiry</span>
+                <span id="renew-new-display" class="renew-info-value">—</span>
+            </div>
+
+            <label class="form-label">Add Days</label>
+            <div class="renew-presets">
+                <button class="btn btn-outline renew-btn" onclick="window.previewRenew(7)">+7d</button>
+                <button class="btn btn-outline renew-btn" onclick="window.previewRenew(15)">+15d</button>
+                <button class="btn btn-outline renew-btn" onclick="window.previewRenew(30)">+30d</button>
+                <button class="btn btn-outline renew-btn" onclick="window.previewRenew(90)">+90d</button>
+            </div>
+            <label class="form-label" style="margin-top:0.75rem;">Remove Days</label>
+            <div class="renew-presets">
+                <button class="btn btn-outline renew-btn renew-btn-minus" onclick="window.previewRenew(-7)">-7d</button>
+                <button class="btn btn-outline renew-btn renew-btn-minus" onclick="window.previewRenew(-15)">-15d</button>
+                <button class="btn btn-outline renew-btn renew-btn-minus" onclick="window.previewRenew(-30)">-30d</button>
+                <button class="btn btn-outline renew-btn renew-btn-minus" onclick="window.previewRenew(-60)">-60d</button>
+            </div>
+            <label class="form-label" style="margin-top:0.75rem;">Custom (use negative to subtract)</label>
+            <div class="custom-renew-row">
+                <input type="number" id="custom-renew-days" class="form-input" placeholder="e.g. -30 or +14">
+                <button class="btn btn-ghost" onclick="window.previewRenew(document.getElementById('custom-renew-days').value)">Preview</button>
+            </div>
+            <button id="confirm-renew-btn" class="btn btn-success btn-full" style="margin-top:1rem;" disabled onclick="window.confirmRenew()">Confirm Change</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
