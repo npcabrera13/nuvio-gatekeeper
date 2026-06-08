@@ -36,6 +36,9 @@ const emptyState    = document.getElementById('empty-state');
 const statTotal     = document.getElementById('total-users');
 const statActive    = document.getElementById('active-users');
 const statBlocked   = document.getElementById('blocked-users');
+const filterTotal   = document.getElementById('filter-total');
+const filterActive  = document.getElementById('filter-active');
+const filterBlocked = document.getElementById('filter-blocked');
 const toastEl       = document.getElementById('toast');
 
 // ── Toast Utility ───────────────────────────────────────────────────────────
@@ -234,12 +237,44 @@ function loadData() {
         statTotal.textContent   = snapshot.size;
         statActive.textContent  = activeCount;
         statBlocked.textContent = blockedCount;
+        
+        applyFilter();
 
     }, (err) => {
         console.error(err);
         showToast('❌ Failed to load database.', 'error');
     });
 }
+
+// ── Filtering Logic ─────────────────────────────────────────────────────────
+let currentFilter = 'total'; // 'total', 'active', 'blocked'
+
+function applyFilter() {
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        const isExpired = row.querySelector('.badge-expired') !== null;
+        const isBlocked = row.querySelector('.badge-blocked') !== null;
+        const isInactive = isExpired || isBlocked;
+        
+        let shouldShow = true;
+        if (currentFilter === 'active') shouldShow = !isInactive;
+        if (currentFilter === 'blocked') shouldShow = isInactive;
+
+        if (shouldShow) {
+            row.classList.remove('hidden-row');
+        } else {
+            row.classList.add('hidden-row');
+        }
+    });
+
+    filterTotal.classList.toggle('active-filter', currentFilter === 'total');
+    filterActive.classList.toggle('active-filter', currentFilter === 'active');
+    filterBlocked.classList.toggle('active-filter', currentFilter === 'blocked');
+}
+
+filterTotal.addEventListener('click', () => { currentFilter = 'total'; applyFilter(); });
+filterActive.addEventListener('click', () => { currentFilter = 'active'; applyFilter(); });
+filterBlocked.addEventListener('click', () => { currentFilter = 'blocked'; applyFilter(); });
 
 // ── Delegated click handler — reads from dataset, never from HTML strings ───
 tbody.addEventListener('click', (e) => {
