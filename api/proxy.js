@@ -120,7 +120,34 @@ module.exports = async function handler(req, res) {
     console.log(`[Proxy Response] Target: ${targetUrl} | Status: ${upstream.status}`);
 
     const contentType = upstream.headers.get("content-type");
-    const body = await upstream.text();
+    let body = await upstream.text();
+
+    // ── White-Labeling (Nuvio Premium) ──────────────────────────────────────
+    if (contentType && contentType.includes("application/json")) {
+      try {
+        let json = JSON.parse(body);
+
+        // 1. Whitelabel Manifest
+        if (json.id === "com.stremio.torrentio.addon") {
+          json.id = "com.nuvio.premium";
+          json.name = "Nuvio Premium";
+          json.description = "Exclusive high-speed premium streams for Nuvio customers.";
+        }
+
+        // 2. Whitelabel Streams
+        if (json.streams && Array.isArray(json.streams)) {
+          json.streams.forEach(stream => {
+            if (stream.name) stream.name = stream.name.replace(/Torrentio/gi, "Nuvio Premium");
+            if (stream.title) stream.title = stream.title.replace(/Torrentio/gi, "Nuvio Premium");
+          });
+        }
+
+        body = JSON.stringify(json);
+      } catch (e) {
+        // Fallback: simple string replacement if JSON parsing fails
+        body = body.replace(/Torrentio/gi, "Nuvio Premium");
+      }
+    }
 
     // Forward the content-type from Torrentio
     if (contentType) {
