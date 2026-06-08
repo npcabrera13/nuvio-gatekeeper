@@ -187,37 +187,47 @@ function loadData() {
                    <span class="expires-days ${expiry.cssClass}">${expiry.daysLabel}</span>`
                 : `<span class="expires-text">${expiry.text}</span>`;
 
-            // ── Block/Unblock Button ──
-            const toggleBtn = isBlocked
-                ? `<button class="btn-icon btn-unblock" data-tip="Unblock" onclick="window.toggleStatus('${id}','active')">${ICONS.unblock}</button>`
-                : `<button class="btn-icon btn-block"   data-tip="Block"   onclick="window.toggleStatus('${id}','blocked')">${ICONS.block}</button>`;
-
-            // ── Safe strings for inline onclick ──
-            const safeName  = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            const safeNotes = notes.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-            const expiresIso = data.expiresAt ? toDateInputValue(new Date(data.expiresAt.toMillis())) : '';
+            const expiresIso  = data.expiresAt ? toDateInputValue(new Date(data.expiresAt.toMillis())) : '';
+            const expiresMillis = data.expiresAt ? data.expiresAt.toMillis() : 0;
 
             const tr = document.createElement('tr');
+
+            // Store ALL data on dataset — never interpolated into HTML strings
+            tr.dataset.id         = id;
+            tr.dataset.name       = name;
+            tr.dataset.notes      = notes;
+            tr.dataset.expiresIso = expiresIso;
+            tr.dataset.expiresMs  = expiresMillis;
+            tr.dataset.status     = status;
+
             tr.innerHTML = `
                 <td data-label="Customer">
                     <div>
-                        <span class="customer-name">${name}</span>
-                        ${notes ? `<span class="customer-notes" title="${notes}">${notes}</span>` : ''}
+                        <span class="customer-name"></span>
+                        <span class="customer-notes"></span>
                     </div>
                 </td>
-                <td data-label="Token ID"><span class="token-id">${id}</span></td>
+                <td data-label="Token ID"><span class="token-id"></span></td>
                 <td data-label="Expires">${expiryCell}</td>
                 <td data-label="Status">${badge}</td>
                 <td data-label="Actions">
                     <div class="actions">
-                        <button class="btn-icon btn-copy"   data-tip="Copy Link"  onclick="window.copyLink('${id}')">${ICONS.copy}</button>
-                        <button class="btn-icon btn-edit"   data-tip="Edit"       onclick="window.openEdit('${id}','${safeName}','${safeNotes}','${expiresIso}','${id}')">${ICONS.edit}</button>
-                        <button class="btn-icon btn-renew"  data-tip="Adjust Days" onclick="window.openRenew('${id}','${safeName}','${data.expiresAt ? data.expiresAt.toMillis() : 0}')">${ICONS.renew}</button>
-                        ${toggleBtn}
-                        <button class="btn-icon btn-delete" data-tip="Delete"     onclick="window.deleteToken('${id}')">${ICONS.trash}</button>
+                        <button class="btn-icon btn-copy"   data-action="copy"   data-tip="Copy Link">${ICONS.copy}</button>
+                        <button class="btn-icon btn-edit"   data-action="edit"   data-tip="Edit">${ICONS.edit}</button>
+                        <button class="btn-icon btn-renew"  data-action="renew"  data-tip="Adjust Days">${ICONS.renew}</button>
+                        <button class="btn-icon ${isBlocked ? 'btn-unblock' : 'btn-block'}" data-action="toggle" data-tip="${isBlocked ? 'Unblock' : 'Block'}">${isBlocked ? ICONS.unblock : ICONS.block}</button>
+                        <button class="btn-icon btn-delete" data-action="delete" data-tip="Delete">${ICONS.trash}</button>
                     </div>
                 </td>
             `;
+
+            // Set text safely via textContent (immune to any special characters)
+            tr.querySelector('.customer-name').textContent = name;
+            const notesEl = tr.querySelector('.customer-notes');
+            if (notes) { notesEl.textContent = notes; notesEl.title = notes; }
+            else        { notesEl.style.display = 'none'; }
+            tr.querySelector('.token-id').textContent = id;
+
             tbody.appendChild(tr);
         });
 
@@ -230,6 +240,27 @@ function loadData() {
         showToast('❌ Failed to load database.', 'error');
     });
 }
+
+// ── Delegated click handler — reads from dataset, never from HTML strings ───
+tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const tr     = btn.closest('tr');
+    const id     = tr.dataset.id;
+    const name   = tr.dataset.name;
+    const notes  = tr.dataset.notes;
+    const expIso = tr.dataset.expiresIso;
+    const expMs  = tr.dataset.expiresMs;
+    const status = tr.dataset.status;
+
+    switch (btn.dataset.action) {
+        case 'copy':   window.copyLink(id); break;
+        case 'edit':   window.openEdit(id, name, notes, expIso, id); break;
+        case 'renew':  window.openRenew(id, name, expMs); break;
+        case 'toggle': window.toggleStatus(id, status === 'active' ? 'blocked' : 'active'); break;
+        case 'delete': window.deleteToken(id); break;
+    }
+});
 
 // ── Generate Token ──────────────────────────────────────────────────────────
 generateBtn.addEventListener('click', async () => {
