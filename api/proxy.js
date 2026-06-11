@@ -1,43 +1,21 @@
 // Nuvio Stream API — Multi-Addon Secure Reverse-Proxy Gatekeeper
-// Supports individual addon routing AND master bundle merging
+// Supports individual addon routing AND dynamic master bundle merging per customer
 
 const { initializeApp } = require("firebase/app");
 const { getFirestore, doc, getDoc } = require("firebase/firestore");
 
 // ─── Firebase Initialization ────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyDY4xB7sSFdEIOzwVo9rLLIqfs6E6qJf2c",
-  authDomain: "nuvio-f00b0.firebaseapp.com",
-  projectId: "nuvio-f00b0",
-  storageBucket: "nuvio-f00b0.firebasestorage.app",
-  messagingSenderId: "911411655425",
-  appId: "1:911411655425:web:9f2b749425ebae57346100"
+  apiKey: "AIzaSyC4OXdfVs_mXPinhmpAt2su8WKZhUDXWoQ",
+  authDomain: "multiaddon.firebaseapp.com",
+  projectId: "multiaddon",
+  storageBucket: "multiaddon.firebasestorage.app",
+  messagingSenderId: "963978475190",
+  appId: "1:963978475190:web:6796687180b021e049d817"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-// ─── Addon Registry ─────────────────────────────────────────────────────────
-// Add new addons here. Each entry needs a name (for logs) and a baseUrl.
-// The baseUrl is everything BEFORE the Stremio path (e.g. /manifest.json).
-const ADDON_REGISTRY = {
-  torrentio: {
-    name: "Torrentio",
-    baseUrl: "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr",
-  },
-  // ── Add more addons below ─────────────────────────────────────────────
-  // comet: {
-  //   name: "Comet",
-  //   baseUrl: "https://comet.example.com",
-  // },
-  // knightcrawler: {
-  //   name: "KnightCrawler",
-  //   baseUrl: "https://knightcrawler.example.com",
-  // },
-};
-
-// List of addon keys that participate in the Master Bundle
-const BUNDLE_ADDONS = ["torrentio"];
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const BUNDLE_TIMEOUT_MS = 8000; // 8-second failsafe per addon
@@ -70,7 +48,6 @@ function setCorsHeaders(res) {
 }
 
 // ─── Fetch with Timeout ─────────────────────────────────────────────────────
-// Wraps fetch() with a hard timeout so a slow addon can't stall the response.
 async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -84,12 +61,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS
   }
 }
 
-// ─── Fetch streams from a single addon ──────────────────────────────────────
-async function fetchAddonStreams(addonKey, stremioPath) {
-  const addon = ADDON_REGISTRY[addonKey];
-  if (!addon) return [];
+// ─── Fetch streams from a single dynamic addon ──────────────────────────────
+async function fetchAddonStreams(addon, stremioPath) {
+  if (!addon || !addon.url) return [];
 
-  const url = `${addon.baseUrl}/${stremioPath}`;
+  // Remove /manifest.json from the end of the user-provided URL to get the base URL
+  const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
+  const url = `${baseUrl}/${stremioPath}`;
   console.log(`[Bundle] Fetching from ${addon.name}: ${url}`);
 
   try {
@@ -105,7 +83,7 @@ async function fetchAddonStreams(addonKey, stremioPath) {
 
     const json = await upstream.json();
 
-    // Tag each stream with the addon source so users can see where it came from
+    // Tag each stream with the addon source
     if (json.streams && Array.isArray(json.streams)) {
       json.streams.forEach((s) => {
         if (s.name) s.name = s.name.replace(/^/, `[${addon.name}] `);
@@ -138,34 +116,42 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(EMPTY_RESPONSE);
   }
 
+  let customerData = null;
+
   // ── 2. Validate token against Firestore ───────────────────────────────
   try {
+    console.log(`[Proxy] Checking Firestore for token: "${token}"`);
     const customerRef = doc(db, "customers", token);
     const customerSnap = await getDoc(customerRef);
 
+    console.log(`[Proxy] Document exists? ${customerSnap.exists()}`);
+    if (customerSnap.exists()) {
+      console.log(`[Proxy] Document data:`, JSON.stringify(customerSnap.data()));
+    }
+
     if (!customerSnap.exists() || customerSnap.data().status !== "active") {
+      console.log(`[Proxy] Token invalid or inactive: exists=${customerSnap.exists()}, status=${customerSnap.exists() ? customerSnap.data().status : 'none'}`);
       return res.status(200).json(EMPTY_RESPONSE);
     }
 
-    const data = customerSnap.data();
-    if (data.expiresAt) {
+    customerData = customerSnap.data();
+    if (customerData.expiresAt) {
       const expMillis =
-        typeof data.expiresAt.toMillis === "function"
-          ? data.expiresAt.toMillis()
-          : new Date(data.expiresAt).getTime();
+        typeof customerData.expiresAt.toMillis === "function"
+          ? customerData.expiresAt.toMillis()
+          : new Date(customerData.expiresAt).getTime();
 
       if (Date.now() > expMillis) {
+        console.log(`[Proxy] Token expired: ${new Date(expMillis).toISOString()}`);
         return res.status(200).json(EMPTY_RESPONSE);
       }
     }
   } catch (error) {
-    console.error("Firestore lookup failed:", error.message);
+    console.error("[Proxy] Firestore lookup failed:", error);
     return res.status(200).json(EMPTY_RESPONSE);
   }
 
   // ── 3. Parse addon and stremio path from query params ─────────────────
-  // The vercel.json rewrites pass: ?token=...&addon=...&prefix=...&p=...
-  // If no addon param → Master Bundle mode
   const addonKey = req.query.addon || null;
   const prefix = req.query.prefix || "";
   const pSuffix = req.query.p
@@ -175,15 +161,24 @@ module.exports = async function handler(req, res) {
 
   console.log(`[Proxy] Token: ${token} | Addon: ${addonKey || "BUNDLE"} | Path: ${stremioPath}`);
 
+  const globalSettingsSnap = await getDoc(doc(db, "settings", "global"));
+  const globalData = globalSettingsSnap.exists() ? globalSettingsSnap.data() : {};
+  const userAddons = globalData.addons || [];
+
   // ── 4A. Single Addon Mode (e.g. /:token/torrentio/manifest.json) ─────
   if (addonKey) {
-    const addon = ADDON_REGISTRY[addonKey];
-    if (!addon) {
-      return res.status(404).json({ error: `Unknown addon: ${addonKey}` });
+    // Find matching addon by comparing lowercase alphanumeric name
+    const targetAddon = userAddons.find(a => 
+        a.name.toLowerCase().replace(/[^a-z0-9]/g, '') === addonKey
+    );
+
+    if (!targetAddon || !targetAddon.url) {
+      return res.status(404).json({ error: `Addon not configured for this token: ${addonKey}` });
     }
 
-    const targetUrl = `${addon.baseUrl}/${stremioPath}`;
-    console.log(`[Single] Proxying to ${addon.name}: ${targetUrl}`);
+    const baseUrl = targetAddon.url.replace(/\/manifest\.json$/, "");
+    const targetUrl = `${baseUrl}/${stremioPath}`;
+    console.log(`[Single] Proxying to ${targetAddon.name}: ${targetUrl}`);
 
     try {
       const upstream = await fetchWithTimeout(targetUrl, {
@@ -198,7 +193,7 @@ module.exports = async function handler(req, res) {
       res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
       return res.status(upstream.status).send(body);
     } catch (error) {
-      console.error(`[Single] ${addon.name} fetch failed:`, error.message);
+      console.error(`[Single] ${targetAddon.name} fetch failed:`, error.message);
       return res.status(200).json(EMPTY_RESPONSE);
     }
   }
@@ -212,23 +207,27 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(BUNDLE_MANIFEST);
   }
 
-  // For stream requests: fan out to ALL bundle addons simultaneously
+  // For stream requests: fan out to ALL configured addons simultaneously
   if (stremioPath.startsWith("stream/")) {
-    console.log(`[Bundle] Fetching streams from ${BUNDLE_ADDONS.length} addon(s)...`);
+    console.log(`[Bundle] Fetching streams from ${userAddons.length} addon(s)...`);
+
+    if (userAddons.length === 0) {
+      return res.status(200).json({ streams: [] });
+    }
 
     // Fire all addon requests at the same time with Promise.allSettled
     const results = await Promise.allSettled(
-      BUNDLE_ADDONS.map((key) => fetchAddonStreams(key, stremioPath))
+      userAddons.map((addon) => fetchAddonStreams(addon, stremioPath))
     );
 
     // Merge all successful stream arrays into one big list
     const mergedStreams = [];
     results.forEach((result, i) => {
       if (result.status === "fulfilled" && Array.isArray(result.value)) {
-        console.log(`[Bundle] ${BUNDLE_ADDONS[i]}: got ${result.value.length} streams`);
+        console.log(`[Bundle] ${userAddons[i].name}: got ${result.value.length} streams`);
         mergedStreams.push(...result.value);
       } else {
-        console.log(`[Bundle] ${BUNDLE_ADDONS[i]}: failed or empty`);
+        console.log(`[Bundle] ${userAddons[i].name}: failed or empty`);
       }
     });
 
@@ -240,9 +239,11 @@ module.exports = async function handler(req, res) {
   }
 
   // For any other request type (catalog, meta, etc.) — proxy to first addon
-  const fallbackAddon = ADDON_REGISTRY[BUNDLE_ADDONS[0]];
-  if (fallbackAddon) {
-    const targetUrl = `${fallbackAddon.baseUrl}/${stremioPath}`;
+  if (userAddons.length > 0) {
+    const fallbackAddon = userAddons[0];
+    const baseUrl = fallbackAddon.url.replace(/\/manifest\.json$/, "");
+    const targetUrl = `${baseUrl}/${stremioPath}`;
+    
     try {
       const upstream = await fetchWithTimeout(targetUrl, {
         method: req.method,

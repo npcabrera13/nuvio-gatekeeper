@@ -3,6 +3,8 @@ const path = require('path');
 const app = express();
 const handler = require('./api/proxy.js');
 
+console.log("[Server] Loaded proxy handler from:", require.resolve('./api/proxy.js'));
+
 // Stremio resource types (used to detect proxy requests)
 const STREMIO_RESOURCES = ['manifest.json', 'stream', 'catalog', 'meta'];
 
@@ -44,18 +46,43 @@ app.use(async (req, res, next) => {
     const prefix = stremioSegments[0]; // e.g. "manifest.json" or "stream"
     const p = stremioSegments.slice(1).join('/'); // e.g. "movie/tt1234.json"
 
-    req.query.token = token || req.query.token;
-    req.query.addon = addon;
-    req.query.prefix = prefix;
-    if (p) req.query.p = p;
+    Object.defineProperty(req, 'query', {
+        value: {
+            token: token,
+            addon: addon,
+            prefix: prefix,
+            p: p
+        },
+        writable: true,
+        configurable: true
+    });
 
     console.log(`[Server] Routing → token=${token} addon=${addon} prefix=${prefix} p=${p}`);
+    console.log("[Server] req.query:", req.query);
 
-    await handler(req, res);
+    try {
+        await handler(req, res);
+    } catch (err) {
+        console.error("[Server] Error executing proxy handler:", err);
+        res.status(500).send("Proxy handler error: " + err.message);
+    }
 });
 
 // Serve static files (Admin UI) from root — AFTER proxy middleware
 app.use(express.static(__dirname));
+
+const fs = require('fs');
+
+// Fallback for /configure path to serve the admin UI
+app.get('/configure', (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'index.html');
+        const content = fs.readFileSync(filePath, 'utf8');
+        res.send(content);
+    } catch (err) {
+        res.status(500).send("Error loading index.html: " + err.message);
+    }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
