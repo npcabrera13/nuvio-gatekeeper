@@ -160,7 +160,10 @@ function getAddonsFromForm() {
                 url = 'https://' + url.slice(10);
             }
             if (!url.endsWith('manifest.json')) {
-                url = url.replace(/\\/$/, '') + '/manifest.json';
+                if (url.endsWith('/')) {
+                    url = url.slice(0, -1);
+                }
+                url = url + '/manifest.json';
             }
             // Update the input field visually so the user sees the correction
             row.querySelector('.addon-url').value = url;
