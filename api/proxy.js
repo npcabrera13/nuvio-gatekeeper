@@ -118,6 +118,34 @@ module.exports = async function handler(req, res) {
 
   let customerData = null;
 
+  const prefix = req.query.prefix || "";
+  const pSuffix = req.query.p
+    ? Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p
+    : "";
+  const stremioPath = pSuffix ? `${prefix}/${pSuffix}` : prefix;
+
+  // Fetch global settings early to get the support URL
+  const globalSettingsSnap = await getDoc(doc(db, "settings", "global"));
+  const globalData = globalSettingsSnap.exists() ? globalSettingsSnap.data() : {};
+  const userAddons = globalData.addons || [];
+  const supportUrl = globalData.supportUrl || "";
+
+  // Helper to return either an empty response or a message stream
+  const getBlockedResponse = () => {
+    if (prefix === "stream") {
+      return {
+        streams: [
+          {
+            name: "Nuvio Gatekeeper",
+            title: "🚫 Access Blocked / Expired\nClick here to contact support and renew.",
+            externalUrl: supportUrl || undefined
+          }
+        ]
+      };
+    }
+    return EMPTY_RESPONSE;
+  };
+
   // ── 2. Validate token against Firestore ───────────────────────────────
   try {
     console.log(`[Proxy] Checking Firestore for token: "${token}"`);
@@ -131,7 +159,7 @@ module.exports = async function handler(req, res) {
 
     if (!customerSnap.exists() || customerSnap.data().status !== "active") {
       console.log(`[Proxy] Token invalid or inactive: exists=${customerSnap.exists()}, status=${customerSnap.exists() ? customerSnap.data().status : 'none'}`);
-      return res.status(200).json(EMPTY_RESPONSE);
+      return res.status(200).json(getBlockedResponse());
     }
 
     customerData = customerSnap.data();
@@ -143,27 +171,18 @@ module.exports = async function handler(req, res) {
 
       if (Date.now() > expMillis) {
         console.log(`[Proxy] Token expired: ${new Date(expMillis).toISOString()}`);
-        return res.status(200).json(EMPTY_RESPONSE);
+        return res.status(200).json(getBlockedResponse());
       }
     }
   } catch (error) {
     console.error("[Proxy] Firestore lookup failed:", error);
-    return res.status(200).json(EMPTY_RESPONSE);
+    return res.status(200).json(getBlockedResponse());
   }
 
   // ── 3. Parse addon and stremio path from query params ─────────────────
   const addonKey = req.query.addon || null;
-  const prefix = req.query.prefix || "";
-  const pSuffix = req.query.p
-    ? Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p
-    : "";
-  const stremioPath = pSuffix ? `${prefix}/${pSuffix}` : prefix;
 
   console.log(`[Proxy] Token: ${token} | Addon: ${addonKey || "BUNDLE"} | Path: ${stremioPath}`);
-
-  const globalSettingsSnap = await getDoc(doc(db, "settings", "global"));
-  const globalData = globalSettingsSnap.exists() ? globalSettingsSnap.data() : {};
-  const userAddons = globalData.addons || [];
 
   // ── 4A. Single Addon Mode (e.g. /:token/torrentio/manifest.json) ─────
   if (addonKey) {

@@ -187,6 +187,14 @@
             <div class="modal-body">
                 <p class="help-text" style="margin-bottom: 1rem;">Configure the default addons applied to all customer tokens. Changes made here apply instantly to all customers.</p>
                 
+                <div class="form-group" style="margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                    <label for="global-support-url" style="display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fas fa-headset" style="color: var(--accent);"></i> Support Contact URL (For Blocked Users)
+                    </label>
+                    <input type="url" id="global-support-url" class="form-input" placeholder="e.g. https://t.me/yourusername" style="width: 100%;">
+                    <p class="help-text" style="margin-top: 0.5rem; font-size: 0.8rem;">When a user is blocked or expired, they will see a stream that opens this link.</p>
+                </div>
+                
                 <div style="display:flex; justify-content:space-between; margin-bottom: 1rem; align-items:center;">
                     <strong id="global-addon-count" style="font-size: 0.9rem; color: var(--text-muted);">0 Addons</strong>
                     <div class="input-group" style="display: inline-flex;">

@@ -58,6 +58,7 @@ const confirmRenewBtn = document.getElementById('confirm-renew-btn');
 const toastEl       = document.getElementById('toast');
 
 let globalAddonsCache = [];
+let globalSupportUrlCache = '';
 
 // ── Toast Utility ───────────────────────────────────────────────────────────
 let toastTimer = null;
@@ -119,6 +120,8 @@ globalAddonSearch.addEventListener('input', function(e) {
 document.getElementById('open-global-settings-modal').addEventListener('click', () => {
     globalAddonList.innerHTML = '';
     globalAddonSearch.value = '';
+    document.getElementById('global-support-url').value = globalSupportUrlCache || '';
+    
     if (globalAddonsCache.length === 0) {
         addAddonRow();
     } else {
@@ -170,11 +173,12 @@ function getAddonsFromForm() {
 
 saveGlobalSettingsBtn.addEventListener('click', async () => {
     const addons = getAddonsFromForm();
+    const supportUrl = document.getElementById('global-support-url').value.trim();
     saveGlobalSettingsBtn.disabled = true;
     saveGlobalSettingsBtn.textContent = "Saving...";
 
     try {
-        await setDoc(globalSettingsRef, { addons });
+        await setDoc(globalSettingsRef, { addons, supportUrl });
         showToast('✅ Global settings saved.');
         globalSettingsModal.classList.add('hidden');
     } catch (e) {
@@ -516,8 +520,10 @@ function loadData() {
     onSnapshot(globalSettingsRef, (snap) => {
         if (snap.exists()) {
             globalAddonsCache = snap.data().addons || [];
+            globalSupportUrlCache = snap.data().supportUrl || '';
         } else {
             globalAddonsCache = [];
+            globalSupportUrlCache = '';
         }
     });
 
