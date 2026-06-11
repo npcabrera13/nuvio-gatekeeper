@@ -1,5 +1,5 @@
-// Nuvio Stream API — Secure Reverse-Proxy Gatekeeper
-// Catch-all serverless function for Vercel
+// Nuvio Stream API — Multi-Addon Secure Reverse-Proxy Gatekeeper
+// Supports individual addon routing AND master bundle merging
 
 const { initializeApp } = require("firebase/app");
 const { getFirestore, doc, getDoc } = require("firebase/firestore");
@@ -17,17 +17,49 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ─── Target Torrentio Base URL ──────────────────────────────────────────────
-const TORRENTIO_BASE =
-  "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr";
+// ─── Addon Registry ─────────────────────────────────────────────────────────
+// Add new addons here. Each entry needs a name (for logs) and a baseUrl.
+// The baseUrl is everything BEFORE the Stremio path (e.g. /manifest.json).
+const ADDON_REGISTRY = {
+  torrentio: {
+    name: "Torrentio",
+    baseUrl: "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr",
+  },
+  // ── Add more addons below ─────────────────────────────────────────────
+  // comet: {
+  //   name: "Comet",
+  //   baseUrl: "https://comet.example.com",
+  // },
+  // knightcrawler: {
+  //   name: "KnightCrawler",
+  //   baseUrl: "https://knightcrawler.example.com",
+  // },
+};
 
-// ─── Empty Stremio-Protocol Response ────────────────────────────────────────
-// Returns a valid Stremio JSON structure with empty arrays so cached Nuvio
-// clients render a clean empty list instead of an error screen.
+// List of addon keys that participate in the Master Bundle
+const BUNDLE_ADDONS = ["torrentio"];
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+const BUNDLE_TIMEOUT_MS = 8000; // 8-second failsafe per addon
+
 const EMPTY_RESPONSE = {
   streams: [],
   metas: [],
   catalogs: [],
+};
+
+// The manifest returned when using the Master Bundle link
+const BUNDLE_MANIFEST = {
+  id: "com.nuvio.bundle",
+  version: "1.0.0",
+  name: "Nuvio Bundle",
+  description: "All your premium streams in one place — powered by Nuvio.",
+  catalogs: [],
+  resources: [
+    { name: "stream", types: ["movie", "series", "anime"], idPrefixes: ["tt", "kitsu"] },
+  ],
+  types: ["movie", "series", "anime", "other"],
+  behaviorHints: { configurable: false },
 };
 
 // ─── CORS Helper ────────────────────────────────────────────────────────────
@@ -37,21 +69,72 @@ function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
+// ─── Fetch with Timeout ─────────────────────────────────────────────────────
+// Wraps fetch() with a hard timeout so a slow addon can't stall the response.
+async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return response;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
+// ─── Fetch streams from a single addon ──────────────────────────────────────
+async function fetchAddonStreams(addonKey, stremioPath) {
+  const addon = ADDON_REGISTRY[addonKey];
+  if (!addon) return [];
+
+  const url = `${addon.baseUrl}/${stremioPath}`;
+  console.log(`[Bundle] Fetching from ${addon.name}: ${url}`);
+
+  try {
+    const upstream = await fetchWithTimeout(url, {
+      method: "GET",
+      headers: { "User-Agent": "NuvioStreamAPI/1.0", Accept: "application/json" },
+    });
+
+    if (!upstream.ok) {
+      console.log(`[Bundle] ${addon.name} returned ${upstream.status}, skipping.`);
+      return [];
+    }
+
+    const json = await upstream.json();
+
+    // Tag each stream with the addon source so users can see where it came from
+    if (json.streams && Array.isArray(json.streams)) {
+      json.streams.forEach((s) => {
+        if (s.name) s.name = s.name.replace(/^/, `[${addon.name}] `);
+      });
+      return json.streams;
+    }
+    return [];
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.log(`[Bundle] ${addon.name} timed out after ${BUNDLE_TIMEOUT_MS}ms, skipping.`);
+    } else {
+      console.error(`[Bundle] ${addon.name} fetch failed:`, err.message);
+    }
+    return [];
+  }
+}
+
 // ─── Main Handler ───────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  // Always set CORS headers on every response
   setCorsHeaders(res);
 
-  // Handle preflight requests immediately
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  // ── 1. Extract the token from the query string ────────────────────────
+  // ── 1. Extract token ──────────────────────────────────────────────────
   const { token } = req.query;
 
   if (!token) {
-    // No token provided → return empty Stremio response
     return res.status(200).json(EMPTY_RESPONSE);
   }
 
@@ -61,73 +144,120 @@ module.exports = async function handler(req, res) {
     const customerSnap = await getDoc(customerRef);
 
     if (!customerSnap.exists() || customerSnap.data().status !== "active") {
-      // Token not found or status is not "active" → empty response
       return res.status(200).json(EMPTY_RESPONSE);
     }
 
-    // Check expiration
     const data = customerSnap.data();
     if (data.expiresAt) {
-      // expiresAt is a Firestore Timestamp (or Date if sent from admin.js incorrectly, but we used Date in setDoc which Firebase converts to Timestamp or string)
-      // Actually, admin.js used setDoc with a native JS Date object. Firebase SDK converts it to Timestamp.
-      // However, we are using the Server SDK (firebase/firestore lite or modular) which also converts.
-      // Wait, in api/[...path].js we use getDoc. If it's a Timestamp, it has .toMillis(). 
-      const expMillis = typeof data.expiresAt.toMillis === 'function' 
-        ? data.expiresAt.toMillis() 
-        : new Date(data.expiresAt).getTime();
-        
+      const expMillis =
+        typeof data.expiresAt.toMillis === "function"
+          ? data.expiresAt.toMillis()
+          : new Date(data.expiresAt).getTime();
+
       if (Date.now() > expMillis) {
-        // Token has expired → empty response
         return res.status(200).json(EMPTY_RESPONSE);
       }
     }
   } catch (error) {
-    // Firestore error → fail gracefully with empty response
     console.error("Firestore lookup failed:", error.message);
     return res.status(200).json(EMPTY_RESPONSE);
   }
 
-  // ── 3. Build the upstream Torrentio URL ───────────────────────────────
-  // req.query.path is an array of path segments captured by [...path].js
-  // e.g. ["stream", "movie", "tt1234567.json"]
-  let upstreamPath = req.query.prefix || "";
-  if (req.query.p) {
-    const suffix = Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p;
-    if (suffix) {
-      upstreamPath += "/" + suffix;
+  // ── 3. Parse addon and stremio path from query params ─────────────────
+  // The vercel.json rewrites pass: ?token=...&addon=...&prefix=...&p=...
+  // If no addon param → Master Bundle mode
+  const addonKey = req.query.addon || null;
+  const prefix = req.query.prefix || "";
+  const pSuffix = req.query.p
+    ? Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p
+    : "";
+  const stremioPath = pSuffix ? `${prefix}/${pSuffix}` : prefix;
+
+  console.log(`[Proxy] Token: ${token} | Addon: ${addonKey || "BUNDLE"} | Path: ${stremioPath}`);
+
+  // ── 4A. Single Addon Mode (e.g. /:token/torrentio/manifest.json) ─────
+  if (addonKey) {
+    const addon = ADDON_REGISTRY[addonKey];
+    if (!addon) {
+      return res.status(404).json({ error: `Unknown addon: ${addonKey}` });
+    }
+
+    const targetUrl = `${addon.baseUrl}/${stremioPath}`;
+    console.log(`[Single] Proxying to ${addon.name}: ${targetUrl}`);
+
+    try {
+      const upstream = await fetchWithTimeout(targetUrl, {
+        method: req.method,
+        headers: { "User-Agent": "NuvioStreamAPI/1.0", Accept: "application/json" },
+      });
+
+      const contentType = upstream.headers.get("content-type");
+      const body = await upstream.text();
+
+      if (contentType) res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
+      return res.status(upstream.status).send(body);
+    } catch (error) {
+      console.error(`[Single] ${addon.name} fetch failed:`, error.message);
+      return res.status(200).json(EMPTY_RESPONSE);
     }
   }
 
-  const targetUrl = `${TORRENTIO_BASE}/${upstreamPath}`;
-  console.log(`[Proxy Request] Path: ${upstreamPath} | Token: ${token} | Target: ${targetUrl}`);
+  // ── 4B. Master Bundle Mode (e.g. /:token/manifest.json) ──────────────
 
-  // ── 4. Fetch from Torrentio and proxy the response ────────────────────
-  try {
-    const upstream = await fetch(targetUrl, {
-      method: req.method,
-      headers: {
-        "User-Agent": "NuvioStreamAPI/1.0",
-        Accept: "application/json",
-      },
+  // If requesting the manifest, return our custom bundle manifest
+  if (stremioPath === "manifest.json") {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+    return res.status(200).json(BUNDLE_MANIFEST);
+  }
+
+  // For stream requests: fan out to ALL bundle addons simultaneously
+  if (stremioPath.startsWith("stream/")) {
+    console.log(`[Bundle] Fetching streams from ${BUNDLE_ADDONS.length} addon(s)...`);
+
+    // Fire all addon requests at the same time with Promise.allSettled
+    const results = await Promise.allSettled(
+      BUNDLE_ADDONS.map((key) => fetchAddonStreams(key, stremioPath))
+    );
+
+    // Merge all successful stream arrays into one big list
+    const mergedStreams = [];
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled" && Array.isArray(result.value)) {
+        console.log(`[Bundle] ${BUNDLE_ADDONS[i]}: got ${result.value.length} streams`);
+        mergedStreams.push(...result.value);
+      } else {
+        console.log(`[Bundle] ${BUNDLE_ADDONS[i]}: failed or empty`);
+      }
     });
 
-    console.log(`[Proxy Response] Target: ${targetUrl} | Status: ${upstream.status}`);
+    console.log(`[Bundle] Total merged streams: ${mergedStreams.length}`);
 
-    const contentType = upstream.headers.get("content-type");
-    const body = await upstream.text();
-
-    // Forward the content-type from Torrentio
-    if (contentType) {
-      res.setHeader("Content-Type", contentType);
-    }
-
-    // Cache the proxied response for 2 minutes to reduce upstream load
+    res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
-
-    return res.status(upstream.status).send(body);
-  } catch (error) {
-    // Upstream fetch failed → return empty Stremio response
-    console.error("Upstream fetch failed:", error.message);
-    return res.status(200).json(EMPTY_RESPONSE);
+    return res.status(200).json({ streams: mergedStreams });
   }
+
+  // For any other request type (catalog, meta, etc.) — proxy to first addon
+  const fallbackAddon = ADDON_REGISTRY[BUNDLE_ADDONS[0]];
+  if (fallbackAddon) {
+    const targetUrl = `${fallbackAddon.baseUrl}/${stremioPath}`;
+    try {
+      const upstream = await fetchWithTimeout(targetUrl, {
+        method: req.method,
+        headers: { "User-Agent": "NuvioStreamAPI/1.0", Accept: "application/json" },
+      });
+      const contentType = upstream.headers.get("content-type");
+      const body = await upstream.text();
+      if (contentType) res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
+      return res.status(upstream.status).send(body);
+    } catch (error) {
+      console.error("Fallback fetch failed:", error.message);
+      return res.status(200).json(EMPTY_RESPONSE);
+    }
+  }
+
+  return res.status(200).json(EMPTY_RESPONSE);
 };

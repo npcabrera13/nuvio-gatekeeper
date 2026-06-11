@@ -340,13 +340,62 @@ window.toggleStatus = async (id, newStatus) => {
     }
 };
 
-// ── Copy Link ───────────────────────────────────────────────────────────────
+// ── Copy Link (Multi-Addon Support) ─────────────────────────────────────────
+// Available addon keys must match the ADDON_REGISTRY in api/proxy.js
+const COPY_OPTIONS = [
+    { label: '🎯 Bundle (All Addons)',  path: (id) => `${id}/manifest.json` },
+    { label: '🔥 Torrentio Only',       path: (id) => `${id}/torrentio/manifest.json` },
+    // Add more addons here as you register them in proxy.js:
+    // { label: '☄️ Comet Only',         path: (id) => `${id}/comet/manifest.json` },
+];
+
 window.copyLink = (id) => {
-    const baseUrl = window.location.origin;
-    const link = `${baseUrl}/${id}/manifest.json`;
-    navigator.clipboard.writeText(link)
-        .then(() => showToast('📋 Stremio link copied!'))
-        .catch(() => showToast('❌ Could not copy. Try manually.'));
+    // If only one option, copy immediately
+    if (COPY_OPTIONS.length === 1) {
+        const baseUrl = window.location.origin;
+        const link = `${baseUrl}/${COPY_OPTIONS[0].path(id)}`;
+        navigator.clipboard.writeText(link)
+            .then(() => showToast('📋 Stremio link copied!'))
+            .catch(() => showToast('❌ Could not copy. Try manually.'));
+        return;
+    }
+
+    // Show a small selection popup
+    const existing = document.getElementById('copy-menu');
+    if (existing) existing.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'copy-menu';
+    menu.className = 'copy-menu glass-card';
+    menu.innerHTML = `
+        <div class="copy-menu-title">Copy link for:</div>
+        ${COPY_OPTIONS.map((opt, i) => `
+            <button class="copy-menu-btn" data-idx="${i}">${opt.label}</button>
+        `).join('')}
+    `;
+    document.body.appendChild(menu);
+
+    menu.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-idx]');
+        if (!btn) return;
+        const idx = parseInt(btn.dataset.idx);
+        const baseUrl = window.location.origin;
+        const link = `${baseUrl}/${COPY_OPTIONS[idx].path(id)}`;
+        navigator.clipboard.writeText(link)
+            .then(() => showToast(`📋 ${COPY_OPTIONS[idx].label} link copied!`))
+            .catch(() => showToast('❌ Could not copy. Try manually.'));
+        menu.remove();
+    });
+
+    // Close on outside click
+    setTimeout(() => {
+        document.addEventListener('click', function closer(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', closer);
+            }
+        });
+    }, 10);
 };
 
 // ── Edit Modal ──────────────────────────────────────────────────────────────

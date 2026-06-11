@@ -773,6 +773,47 @@ input[type="date"].form-input {
         justify-content: center;
     }
 
+/* ── Copy Menu Popup ── */
+.copy-menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 300;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 260px;
+    animation: slideUp 0.2s ease;
+}
+
+.copy-menu-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.copy-menu-btn {
+    display: block;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: var(--glass-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.875rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: var(--transition);
+}
+
+.copy-menu-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--accent);
+}
     /* Stats: compact 3-col on mobile */
     .stats-row {
         grid-template-columns: repeat(3, 1fr);
