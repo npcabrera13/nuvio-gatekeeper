@@ -26,28 +26,16 @@ const EMPTY_RESPONSE = {
   catalogs: [],
 };
 
-// The manifest returned when using the Master Bundle link
-const BUNDLE_MANIFEST = {
-  id: "com.nuvio.bundle",
-  version: "1.0.0",
-  name: "Nuvio Bundle",
-  description: "All your premium streams in one place — powered by Nuvio.",
-  catalogs: [],
-  resources: [
-    { name: "stream", types: ["movie", "series", "anime"], idPrefixes: ["tt", "kitsu"] },
-  ],
-  types: ["movie", "series", "anime", "other"],
-  behaviorHints: { configurable: false },
-};
+function getAddonSlug(addonName) {
+  return addonName.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
-// ─── CORS Helper ────────────────────────────────────────────────────────────
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-// ─── Fetch with Timeout ─────────────────────────────────────────────────────
 async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -61,43 +49,110 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS
   }
 }
 
-// ─── Fetch streams from a single dynamic addon ──────────────────────────────
-async function fetchAddonStreams(addon, stremioPath) {
-  if (!addon || !addon.url) return [];
+// ─── Dynamic Manifest Fetching ──────────────────────────────────────────────
+async function fetchAddonManifest(addon) {
+  const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
+  const url = `${baseUrl}/manifest.json`;
+  try {
+    const res = await fetchWithTimeout(url, { method: "GET" }, 5000); // 5 sec for manifests
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    console.log(`[Manifest] Failed to fetch ${addon.name} manifest: ${e.message}`);
+    return null;
+  }
+}
 
-  // Remove /manifest.json from the end of the user-provided URL to get the base URL
+async function buildDynamicBundleManifest(userAddons) {
+  const bundle = {
+    id: "com.nuvio.bundle",
+    version: "1.0.0",
+    name: "Nuvio Bundle",
+    description: "All your premium addons in one unified master bundle — powered by Nuvio.",
+    catalogs: [],
+    resources: [],
+    types: [],
+    behaviorHints: { configurable: false }
+  };
+
+  const results = await Promise.allSettled(userAddons.map(fetchAddonManifest));
+  
+  const resourceMap = new Map();
+  const typeSet = new Set();
+
+  userAddons.forEach((addon, i) => {
+    const res = results[i];
+    if (res.status === "fulfilled" && res.value) {
+      const manifest = res.value;
+      const slug = getAddonSlug(addon.name);
+
+      // Merge Catalogs (Prefix IDs)
+      if (Array.isArray(manifest.catalogs)) {
+        manifest.catalogs.forEach(cat => {
+          if (!cat.id) return;
+          const prefixedCat = { ...cat, id: `${slug}___${cat.id}` };
+          prefixedCat.name = `[${addon.name}] ${cat.name || ''}`.trim();
+          bundle.catalogs.push(prefixedCat);
+        });
+      }
+
+      // Merge Types
+      if (Array.isArray(manifest.types)) {
+        manifest.types.forEach(t => typeSet.add(t));
+      }
+
+      // Merge Resources
+      if (Array.isArray(manifest.resources)) {
+        manifest.resources.forEach(res => {
+          let rName, rTypes, rIdPrefixes;
+          if (typeof res === "string") {
+            rName = res;
+            rTypes = manifest.types || [];
+            rIdPrefixes = manifest.idPrefixes || [];
+          } else {
+            rName = res.name;
+            rTypes = res.types || [];
+            rIdPrefixes = res.idPrefixes || [];
+          }
+
+          if (!resourceMap.has(rName)) {
+            resourceMap.set(rName, { name: rName, types: new Set(), idPrefixes: new Set(), matchAll: false });
+          }
+          const existing = resourceMap.get(rName);
+          rTypes.forEach(t => existing.types.add(t));
+          
+          if (!rIdPrefixes || rIdPrefixes.length === 0) {
+            existing.matchAll = true; // Supports everything
+          } else {
+            rIdPrefixes.forEach(p => existing.idPrefixes.add(p));
+          }
+        });
+      }
+    }
+  });
+
+  bundle.types = Array.from(typeSet);
+  bundle.resources = Array.from(resourceMap.values()).map(r => {
+    const resObj = { name: r.name, types: Array.from(r.types) };
+    if (!r.matchAll && r.idPrefixes.size > 0) {
+      resObj.idPrefixes = Array.from(r.idPrefixes);
+    }
+    return resObj;
+  });
+
+  return bundle;
+}
+
+// ─── Fan-out Fetchers ───────────────────────────────────────────────────────
+async function fetchAddonJson(addon, stremioPath) {
   const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
   const url = `${baseUrl}/${stremioPath}`;
-  console.log(`[Bundle] Fetching from ${addon.name}: ${url}`);
-
   try {
-    const upstream = await fetchWithTimeout(url, {
-      method: "GET",
-      headers: { "User-Agent": "NuvioStreamAPI/1.0", Accept: "application/json" },
-    });
-
-    if (!upstream.ok) {
-      console.log(`[Bundle] ${addon.name} returned ${upstream.status}, skipping.`);
-      return [];
-    }
-
-    const json = await upstream.json();
-
-    // Tag each stream with the addon source
-    if (json.streams && Array.isArray(json.streams)) {
-      json.streams.forEach((s) => {
-        if (s.name) s.name = s.name.replace(/^/, `[${addon.name}] `);
-      });
-      return json.streams;
-    }
-    return [];
-  } catch (err) {
-    if (err.name === "AbortError") {
-      console.log(`[Bundle] ${addon.name} timed out after ${BUNDLE_TIMEOUT_MS}ms, skipping.`);
-    } else {
-      console.error(`[Bundle] ${addon.name} fetch failed:`, err.message);
-    }
-    return [];
+    const res = await fetchWithTimeout(url, { method: "GET" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
   }
 }
 
@@ -105,176 +160,159 @@ async function fetchAddonStreams(addon, stremioPath) {
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
 
-  // ── 1. Extract token ──────────────────────────────────────────────────
   const { token } = req.query;
-
-  if (!token) {
-    return res.status(200).json(EMPTY_RESPONSE);
-  }
-
-  let customerData = null;
+  if (!token) return res.status(200).json(EMPTY_RESPONSE);
 
   const prefix = req.query.prefix || "";
-  const pSuffix = req.query.p
-    ? Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p
-    : "";
+  const pSuffix = req.query.p ? (Array.isArray(req.query.p) ? req.query.p.join("/") : req.query.p) : "";
   const stremioPath = pSuffix ? `${prefix}/${pSuffix}` : prefix;
 
-  // Fetch global settings early to get the support URL
+  // 1. Fetch Global Data
   const globalSettingsSnap = await getDoc(doc(db, "settings", "global"));
   const globalData = globalSettingsSnap.exists() ? globalSettingsSnap.data() : {};
   const userAddons = globalData.addons || [];
   const supportUrl = globalData.supportUrl || "";
 
-  // Helper to return either an empty response or a message stream
   const getBlockedResponse = () => {
     if (prefix === "stream") {
       return {
-        streams: [
-          {
-            name: "Nuvio Gatekeeper",
-            title: "🚫 Access Blocked / Expired\nClick here to contact support and renew.",
-            externalUrl: supportUrl || undefined
-          }
-        ]
+        streams: [{
+          name: "Nuvio Gatekeeper",
+          title: "🚫 Access Blocked / Expired\nClick here to contact support and renew.",
+          externalUrl: supportUrl || undefined
+        }]
       };
     }
     return EMPTY_RESPONSE;
   };
 
-  // ── 2. Validate token against Firestore ───────────────────────────────
+  // 2. Validate Token
   try {
-    console.log(`[Proxy] Checking Firestore for token: "${token}"`);
-    const customerRef = doc(db, "customers", token);
-    const customerSnap = await getDoc(customerRef);
-
-    console.log(`[Proxy] Document exists? ${customerSnap.exists()}`);
-    if (customerSnap.exists()) {
-      console.log(`[Proxy] Document data:`, JSON.stringify(customerSnap.data()));
-    }
-
+    const customerSnap = await getDoc(doc(db, "customers", token));
     if (!customerSnap.exists() || customerSnap.data().status !== "active") {
-      console.log(`[Proxy] Token invalid or inactive: exists=${customerSnap.exists()}, status=${customerSnap.exists() ? customerSnap.data().status : 'none'}`);
       return res.status(200).json(getBlockedResponse());
     }
-
-    customerData = customerSnap.data();
-    if (customerData.expiresAt) {
-      const expMillis =
-        typeof customerData.expiresAt.toMillis === "function"
-          ? customerData.expiresAt.toMillis()
-          : new Date(customerData.expiresAt).getTime();
-
-      if (Date.now() > expMillis) {
-        console.log(`[Proxy] Token expired: ${new Date(expMillis).toISOString()}`);
-        return res.status(200).json(getBlockedResponse());
-      }
+    const cData = customerSnap.data();
+    if (cData.expiresAt) {
+      const expMillis = typeof cData.expiresAt.toMillis === "function" ? cData.expiresAt.toMillis() : new Date(cData.expiresAt).getTime();
+      if (Date.now() > expMillis) return res.status(200).json(getBlockedResponse());
     }
-  } catch (error) {
-    console.error("[Proxy] Firestore lookup failed:", error);
+  } catch (e) {
     return res.status(200).json(getBlockedResponse());
   }
 
-  // ── 3. Parse addon and stremio path from query params ─────────────────
   const addonKey = req.query.addon || null;
-
   console.log(`[Proxy] Token: ${token} | Addon: ${addonKey || "BUNDLE"} | Path: ${stremioPath}`);
 
-  // ── 4A. Single Addon Mode (e.g. /:token/torrentio/manifest.json) ─────
+  // ── 3A. Single Addon Mode ───────────────────────────────────────────────
   if (addonKey) {
-    // Find matching addon by comparing lowercase alphanumeric name
-    const targetAddon = userAddons.find(a => 
-        a.name.toLowerCase().replace(/[^a-z0-9]/g, '') === addonKey
-    );
-
-    if (!targetAddon || !targetAddon.url) {
-      return res.status(404).json({ error: `Addon not configured for this token: ${addonKey}` });
-    }
-
+    const targetAddon = userAddons.find(a => getAddonSlug(a.name) === addonKey);
+    if (!targetAddon || !targetAddon.url) return res.status(404).json({ error: "Addon not found" });
+    
     const baseUrl = targetAddon.url.replace(/\/manifest\.json$/, "");
     const targetUrl = `${baseUrl}/${stremioPath}`;
-    console.log(`[Single] Proxying to ${targetAddon.name}: ${targetUrl}`);
-
     try {
-      const upstream = await fetchWithTimeout(targetUrl, {
-        method: req.method,
-        headers: { "User-Agent": "NuvioStreamAPI/1.0", Accept: "application/json" },
-      });
-
-      const contentType = upstream.headers.get("content-type");
-      const body = await upstream.text();
-
-      if (contentType) res.setHeader("Content-Type", contentType);
+      const upstream = await fetchWithTimeout(targetUrl, { method: req.method });
+      const ct = upstream.headers.get("content-type");
+      if (ct) res.setHeader("Content-Type", ct);
       res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
-      return res.status(upstream.status).send(body);
-    } catch (error) {
-      console.error(`[Single] ${targetAddon.name} fetch failed:`, error.message);
+      return res.status(upstream.status).send(await upstream.text());
+    } catch (e) {
       return res.status(200).json(EMPTY_RESPONSE);
     }
   }
 
-  // ── 4B. Master Bundle Mode (e.g. /:token/manifest.json) ──────────────
+  // ── 3B. Master Bundle Mode ──────────────────────────────────────────────
 
-  // If requesting the manifest, return our custom bundle manifest
+  // Manifest
   if (stremioPath === "manifest.json") {
+    const bundleManifest = await buildDynamicBundleManifest(userAddons);
     res.setHeader("Content-Type", "application/json");
+    // Edge Cache manifest for 5 minutes to prevent spamming upstream addons
     res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
-    return res.status(200).json(BUNDLE_MANIFEST);
+    return res.status(200).json(bundleManifest);
   }
 
-  // For stream requests: fan out to ALL configured addons simultaneously
-  if (stremioPath.startsWith("stream/")) {
-    console.log(`[Bundle] Fetching streams from ${userAddons.length} addon(s)...`);
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
 
-    if (userAddons.length === 0) {
-      return res.status(200).json({ streams: [] });
+  // Catalogs
+  if (stremioPath.startsWith("catalog/")) {
+    const parts = stremioPath.split("/");
+    if (parts.length >= 3) {
+      let catIdRaw = parts[2];
+      let hasJson = catIdRaw.endsWith('.json');
+      let catId = hasJson ? catIdRaw.slice(0, -5) : catIdRaw;
+      
+      const splitIndex = catId.indexOf("___");
+      if (splitIndex !== -1) {
+        const targetSlug = catId.slice(0, splitIndex);
+        const originalId = catId.slice(splitIndex + 3);
+        const targetAddon = userAddons.find(a => getAddonSlug(a.name) === targetSlug);
+        
+        if (targetAddon) {
+          parts[2] = originalId + (hasJson ? ".json" : "");
+          const originalPath = parts.join("/");
+          const upstreamData = await fetchAddonJson(targetAddon, originalPath);
+          return res.status(200).json(upstreamData || { metas: [] });
+        }
+      }
     }
+    return res.status(200).json({ metas: [] });
+  }
 
-    // Fire all addon requests at the same time with Promise.allSettled
-    const results = await Promise.allSettled(
-      userAddons.map((addon) => fetchAddonStreams(addon, stremioPath))
-    );
+  // Meta (Fan out, return first successful meta)
+  if (stremioPath.startsWith("meta/")) {
+    const results = await Promise.allSettled(userAddons.map(a => fetchAddonJson(a, stremioPath)));
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value && r.value.meta) {
+        return res.status(200).json(r.value);
+      }
+    }
+    return res.status(200).json({ meta: {} });
+  }
 
-    // Merge all successful stream arrays into one big list
+  // Streams (Fan out, merge)
+  if (stremioPath.startsWith("stream/")) {
+    const results = await Promise.allSettled(userAddons.map(a => fetchAddonJson(a, stremioPath)));
     const mergedStreams = [];
-    results.forEach((result, i) => {
-      if (result.status === "fulfilled" && Array.isArray(result.value)) {
-        console.log(`[Bundle] ${userAddons[i].name}: got ${result.value.length} streams`);
-        mergedStreams.push(...result.value);
-      } else {
-        console.log(`[Bundle] ${userAddons[i].name}: failed or empty`);
+    results.forEach((r, i) => {
+      if (r.status === "fulfilled" && r.value && Array.isArray(r.value.streams)) {
+        r.value.streams.forEach(s => {
+          if (s.name) s.name = `[${userAddons[i].name}] ${s.name}`;
+          else s.name = `[${userAddons[i].name}]`;
+          mergedStreams.push(s);
+        });
       }
     });
-
-    console.log(`[Bundle] Total merged streams: ${mergedStreams.length}`);
-
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
     return res.status(200).json({ streams: mergedStreams });
   }
 
-  // For any other request type (catalog, meta, etc.) — proxy to first addon
+  // Subtitles (Fan out, merge)
+  if (stremioPath.startsWith("subtitles/")) {
+    const results = await Promise.allSettled(userAddons.map(a => fetchAddonJson(a, stremioPath)));
+    const mergedSubs = [];
+    results.forEach(r => {
+      if (r.status === "fulfilled" && r.value && Array.isArray(r.value.subtitles)) {
+        mergedSubs.push(...r.value.subtitles);
+      }
+    });
+    return res.status(200).json({ subtitles: mergedSubs });
+  }
+
+  // Fallback for anything else
   if (userAddons.length > 0) {
     const fallbackAddon = userAddons[0];
     const baseUrl = fallbackAddon.url.replace(/\/manifest\.json$/, "");
     const targetUrl = `${baseUrl}/${stremioPath}`;
-    
     try {
-      const upstream = await fetchWithTimeout(targetUrl, {
-        method: req.method,
-        headers: { "User-Agent": "NuvioStreamAPI/1.0", Accept: "application/json" },
-      });
-      const contentType = upstream.headers.get("content-type");
-      const body = await upstream.text();
-      if (contentType) res.setHeader("Content-Type", contentType);
-      res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
-      return res.status(upstream.status).send(body);
-    } catch (error) {
-      console.error("Fallback fetch failed:", error.message);
+      const upstream = await fetchWithTimeout(targetUrl, { method: req.method });
+      const ct = upstream.headers.get("content-type");
+      if (ct) res.setHeader("Content-Type", ct);
+      return res.status(upstream.status).send(await upstream.text());
+    } catch (e) {
       return res.status(200).json(EMPTY_RESPONSE);
     }
   }
