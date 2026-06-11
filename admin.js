@@ -149,8 +149,19 @@ function getAddonsFromForm() {
     const addons = [];
     document.querySelectorAll('.addon-item').forEach(row => {
         const name = row.querySelector('.addon-name').value.trim();
-        const url = row.querySelector('.addon-url').value.trim();
+        let url = row.querySelector('.addon-url').value.trim();
+        
         if (url) {
+            // Auto-correct common URL mistakes
+            if (url.startsWith('stremio://')) {
+                url = 'https://' + url.slice(10);
+            }
+            if (!url.endsWith('manifest.json')) {
+                url = url.replace(/\\/$/, '') + '/manifest.json';
+            }
+            // Update the input field visually so the user sees the correction
+            row.querySelector('.addon-url').value = url;
+            
             addons.push({ name: name || 'Addon', url });
         }
     });
