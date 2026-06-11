@@ -131,9 +131,9 @@ document.getElementById('open-global-settings-modal').addEventListener('click', 
     globalSettingsModal.classList.remove('hidden');
 });
 
-addGlobalAddonBtn.addEventListener('click', () => addAddonRow());
+addGlobalAddonBtn.addEventListener('click', () => addAddonRow('', '', true));
 
-function addAddonRow(name = '', url = '') {
+function addAddonRow(name = '', url = '', prepend = false) {
     const clone = addonTemplate.content.cloneNode(true);
     const row = clone.querySelector('.addon-item');
     row.querySelector('.addon-name').value = name;
@@ -143,8 +143,24 @@ function addAddonRow(name = '', url = '') {
         row.remove();
         updateGlobalAddonCount();
     });
+
+    row.querySelector('.move-up').addEventListener('click', () => {
+        if (row.previousElementSibling) {
+            row.parentNode.insertBefore(row, row.previousElementSibling);
+        }
+    });
+
+    row.querySelector('.move-down').addEventListener('click', () => {
+        if (row.nextElementSibling) {
+            row.parentNode.insertBefore(row.nextElementSibling, row);
+        }
+    });
     
-    globalAddonList.appendChild(row);
+    if (prepend) {
+        globalAddonList.prepend(row);
+    } else {
+        globalAddonList.appendChild(row);
+    }
     updateGlobalAddonCount();
 }
 
