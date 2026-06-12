@@ -30,6 +30,32 @@ function getAddonSlug(addonName) {
   return addonName.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function encodeStremioPath(stremioPath) {
+  return stremioPath
+    .split('/')
+    .map(segment => {
+      const parts = segment.split('&');
+      const mergedParts = [];
+      for (const part of parts) {
+        if (!part.includes('=') && mergedParts.length > 0) {
+          mergedParts[mergedParts.length - 1] += '&' + part;
+        } else {
+          mergedParts.push(part);
+        }
+      }
+      return mergedParts.map(part => {
+        const eqIndex = part.indexOf('=');
+        if (eqIndex !== -1) {
+          const key = part.slice(0, eqIndex);
+          const val = part.slice(eqIndex + 1);
+          return `${encodeURIComponent(key)}=${encodeURIComponent(val)}`;
+        }
+        return encodeURIComponent(part);
+      }).join('&');
+    })
+    .join('/');
+}
+
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -52,7 +78,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS
 // ─── Fan-out Fetchers ───────────────────────────────────────────────────────
 async function fetchAddonJson(addon, stremioPath) {
   const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
-  const url = `${baseUrl}/${stremioPath}`;
+  const url = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
   try {
     const res = await fetchWithTimeout(url, { method: "GET" });
     if (!res.ok) return null;
@@ -133,7 +159,7 @@ module.exports = async function handler(req, res) {
     if (!targetAddon || !targetAddon.url) return res.status(404).json({ error: "Addon not found" });
     
     const baseUrl = targetAddon.url.replace(/\/manifest\.json$/, "");
-    const targetUrl = `${baseUrl}/${stremioPath}`;
+    const targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
     try {
       const upstream = await fetchWithTimeout(targetUrl, { method: req.method });
       const ct = upstream.headers.get("content-type");
@@ -150,7 +176,7 @@ module.exports = async function handler(req, res) {
   // Manifest (Instantly return cached manifest)
   if (stremioPath === "manifest.json") {
     res.setHeader("Content-Type", "application/json");
-    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     return res.status(200).json(bundleManifest);
   }
 
@@ -228,7 +254,7 @@ module.exports = async function handler(req, res) {
   if (userAddons.length > 0) {
     const fallbackAddon = userAddons[0];
     const baseUrl = fallbackAddon.url.replace(/\/manifest\.json$/, "");
-    const targetUrl = `${baseUrl}/${stremioPath}`;
+    const targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
     try {
       const upstream = await fetchWithTimeout(targetUrl, { method: req.method });
       const ct = upstream.headers.get("content-type");
