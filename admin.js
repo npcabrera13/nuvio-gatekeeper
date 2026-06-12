@@ -197,8 +197,20 @@ saveGlobalSettingsBtn.addEventListener('click', async () => {
     saveGlobalSettingsBtn.textContent = "Saving...";
 
     try {
-        await setDoc(globalSettingsRef, { addons, supportUrl });
-        showToast('✅ Global settings saved.');
+        await setDoc(globalSettingsRef, { addons, supportUrl }, { merge: true });
+        showToast('✅ Addons saved. Synchronizing Master Bundle...');
+        
+        try {
+            const syncRes = await fetch('/api/sync', { method: 'POST' });
+            if (syncRes.ok) {
+                showToast('✅ Master Bundle synchronized successfully.');
+            } else {
+                showToast('⚠️ Addons saved, but manifest sync failed.');
+            }
+        } catch (err) {
+            showToast('⚠️ Addons saved, but manifest sync failed.');
+        }
+
         globalSettingsModal.classList.add('hidden');
     } catch (e) {
         console.error(e);

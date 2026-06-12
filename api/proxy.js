@@ -18,7 +18,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ─── Constants ──────────────────────────────────────────────────────────────
-const BUNDLE_TIMEOUT_MS = 8000; // 8-second failsafe per addon
+const BUNDLE_TIMEOUT_MS = 8000; // Keep at 8s to ensure Torrentio streams return
 
 const EMPTY_RESPONSE = {
   streams: [],
@@ -49,100 +49,6 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS
   }
 }
 
-// ─── Dynamic Manifest Fetching ──────────────────────────────────────────────
-async function fetchAddonManifest(addon) {
-  const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
-  const url = `${baseUrl}/manifest.json`;
-  try {
-    const res = await fetchWithTimeout(url, { method: "GET" }, 5000); // 5 sec for manifests
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (e) {
-    console.log(`[Manifest] Failed to fetch ${addon.name} manifest: ${e.message}`);
-    return null;
-  }
-}
-
-async function buildDynamicBundleManifest(userAddons) {
-  const bundle = {
-    id: "com.nuvio.bundle",
-    version: "1.0.0",
-    name: "Nuvio Bundle",
-    description: "All your premium addons in one unified master bundle — powered by Nuvio.",
-    catalogs: [],
-    resources: [],
-    types: [],
-    behaviorHints: { configurable: false }
-  };
-
-  const results = await Promise.allSettled(userAddons.map(fetchAddonManifest));
-  
-  const resourceMap = new Map();
-  const typeSet = new Set();
-
-  userAddons.forEach((addon, i) => {
-    const res = results[i];
-    if (res.status === "fulfilled" && res.value) {
-      const manifest = res.value;
-      const slug = getAddonSlug(addon.name);
-
-      // Merge Catalogs (Prefix IDs)
-      if (Array.isArray(manifest.catalogs)) {
-        manifest.catalogs.forEach(cat => {
-          if (!cat.id) return;
-          const prefixedCat = { ...cat, id: `${slug}___${cat.id}` };
-          prefixedCat.name = (cat.name || '').trim();
-          bundle.catalogs.push(prefixedCat);
-        });
-      }
-
-      // Merge Types
-      if (Array.isArray(manifest.types)) {
-        manifest.types.forEach(t => typeSet.add(t));
-      }
-
-      // Merge Resources
-      if (Array.isArray(manifest.resources)) {
-        manifest.resources.forEach(res => {
-          let rName, rTypes, rIdPrefixes;
-          if (typeof res === "string") {
-            rName = res;
-            rTypes = manifest.types || [];
-            rIdPrefixes = manifest.idPrefixes || [];
-          } else {
-            rName = res.name;
-            rTypes = res.types || [];
-            rIdPrefixes = res.idPrefixes || [];
-          }
-
-          if (!resourceMap.has(rName)) {
-            resourceMap.set(rName, { name: rName, types: new Set(), idPrefixes: new Set(), matchAll: false });
-          }
-          const existing = resourceMap.get(rName);
-          rTypes.forEach(t => existing.types.add(t));
-          
-          if (!rIdPrefixes || rIdPrefixes.length === 0) {
-            existing.matchAll = true; // Supports everything
-          } else {
-            rIdPrefixes.forEach(p => existing.idPrefixes.add(p));
-          }
-        });
-      }
-    }
-  });
-
-  bundle.types = Array.from(typeSet);
-  bundle.resources = Array.from(resourceMap.values()).map(r => {
-    const resObj = { name: r.name, types: Array.from(r.types) };
-    if (!r.matchAll && r.idPrefixes.size > 0) {
-      resObj.idPrefixes = Array.from(r.idPrefixes);
-    }
-    return resObj;
-  });
-
-  return bundle;
-}
-
 // ─── Fan-out Fetchers ───────────────────────────────────────────────────────
 async function fetchAddonJson(addon, stremioPath) {
   const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
@@ -154,6 +60,15 @@ async function fetchAddonJson(addon, stremioPath) {
   } catch (e) {
     return null;
   }
+}
+
+function getAddonsForResource(userAddons, capabilities, resourceType) {
+  if (!capabilities) return userAddons; // fallback if map is missing
+  return userAddons.filter(a => {
+      const slug = getAddonSlug(a.name);
+      if (!capabilities[slug] || !capabilities[slug].resources) return true; // assume yes if unknown
+      return capabilities[slug].resources.includes(resourceType);
+  });
 }
 
 // ─── Main Handler ───────────────────────────────────────────────────────────
@@ -174,37 +89,43 @@ module.exports = async function handler(req, res) {
   const globalData = globalSettingsSnap.exists() ? globalSettingsSnap.data() : {};
   const userAddons = globalData.addons || [];
   const supportUrl = globalData.supportUrl || "";
+  const bundleManifest = globalData.bundleManifest || { id: "com.nuvio.bundle", version: "1.0.0", name: "Nuvio Bundle", catalogs: [], resources: [], types: [] };
+  const addonCapabilities = globalData.addonCapabilities || null;
 
   const getBlockedResponse = () => {
-    if (prefix === "stream") {
-      return {
-        streams: [{
-          name: "Nuvio Gatekeeper",
-          title: "🚫 Access Blocked / Expired\nClick here to contact support and renew.",
-          externalUrl: supportUrl || undefined
-        }]
-      };
-    }
-    return EMPTY_RESPONSE;
+    return {
+      streams: [{
+        name: "Nuvio Gatekeeper",
+        title: "🚫 Access Blocked / Expired\nClick here to contact support and renew.",
+        externalUrl: supportUrl || undefined
+      }]
+    };
   };
 
-  // 2. Validate Token
+  // 2. Validate Token & Selective Blocking
+  let isBlocked = false;
   try {
     const customerSnap = await getDoc(doc(db, "customers", token));
     if (!customerSnap.exists() || customerSnap.data().status !== "active") {
-      return res.status(200).json(getBlockedResponse());
-    }
-    const cData = customerSnap.data();
-    if (cData.expiresAt) {
-      const expMillis = typeof cData.expiresAt.toMillis === "function" ? cData.expiresAt.toMillis() : new Date(cData.expiresAt).getTime();
-      if (Date.now() > expMillis) return res.status(200).json(getBlockedResponse());
+      isBlocked = true;
+    } else {
+      const cData = customerSnap.data();
+      if (cData.expiresAt) {
+        const expMillis = typeof cData.expiresAt.toMillis === "function" ? cData.expiresAt.toMillis() : new Date(cData.expiresAt).getTime();
+        if (Date.now() > expMillis) isBlocked = true;
+      }
     }
   } catch (e) {
-    return res.status(200).json(getBlockedResponse());
+    isBlocked = true;
+  }
+
+  // Selective Blocking: If blocked, ONLY intercept stream requests.
+  if (isBlocked && stremioPath.startsWith("stream/")) {
+      return res.status(200).json(getBlockedResponse());
   }
 
   const addonKey = req.query.addon || null;
-  console.log(`[Proxy] Token: ${token} | Addon: ${addonKey || "BUNDLE"} | Path: ${stremioPath}`);
+  console.log(`[Proxy] Token: ${token} | Blocked: ${isBlocked} | Addon: ${addonKey || "BUNDLE"} | Path: ${stremioPath}`);
 
   // ── 3A. Single Addon Mode ───────────────────────────────────────────────
   if (addonKey) {
@@ -226,11 +147,9 @@ module.exports = async function handler(req, res) {
 
   // ── 3B. Master Bundle Mode ──────────────────────────────────────────────
 
-  // Manifest
+  // Manifest (Instantly return cached manifest)
   if (stremioPath === "manifest.json") {
-    const bundleManifest = await buildDynamicBundleManifest(userAddons);
     res.setHeader("Content-Type", "application/json");
-    // Edge Cache manifest for 5 minutes to prevent spamming upstream addons
     res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
     return res.status(200).json(bundleManifest);
   }
@@ -263,9 +182,10 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ metas: [] });
   }
 
-  // Meta (Fan out, return first successful meta)
+  // Meta (Intelligent Routing)
   if (stremioPath.startsWith("meta/")) {
-    const results = await Promise.allSettled(userAddons.map(a => fetchAddonJson(a, stremioPath)));
+    const targetAddons = getAddonsForResource(userAddons, addonCapabilities, "meta");
+    const results = await Promise.allSettled(targetAddons.map(a => fetchAddonJson(a, stremioPath)));
     for (const r of results) {
       if (r.status === "fulfilled" && r.value && r.value.meta) {
         return res.status(200).json(r.value);
@@ -274,15 +194,16 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ meta: {} });
   }
 
-  // Streams (Fan out, merge)
+  // Streams (Intelligent Routing)
   if (stremioPath.startsWith("stream/")) {
-    const results = await Promise.allSettled(userAddons.map(a => fetchAddonJson(a, stremioPath)));
+    const targetAddons = getAddonsForResource(userAddons, addonCapabilities, "stream");
+    const results = await Promise.allSettled(targetAddons.map(a => fetchAddonJson(a, stremioPath)));
     const mergedStreams = [];
     results.forEach((r, i) => {
       if (r.status === "fulfilled" && r.value && Array.isArray(r.value.streams)) {
         r.value.streams.forEach(s => {
-          if (s.name) s.name = `[${userAddons[i].name}] ${s.name}`;
-          else s.name = `[${userAddons[i].name}]`;
+          if (s.name) s.name = `[${targetAddons[i].name}] ${s.name}`;
+          else s.name = `[${targetAddons[i].name}]`;
           mergedStreams.push(s);
         });
       }
@@ -290,9 +211,10 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ streams: mergedStreams });
   }
 
-  // Subtitles (Fan out, merge)
+  // Subtitles (Intelligent Routing)
   if (stremioPath.startsWith("subtitles/")) {
-    const results = await Promise.allSettled(userAddons.map(a => fetchAddonJson(a, stremioPath)));
+    const targetAddons = getAddonsForResource(userAddons, addonCapabilities, "subtitles");
+    const results = await Promise.allSettled(targetAddons.map(a => fetchAddonJson(a, stremioPath)));
     const mergedSubs = [];
     results.forEach(r => {
       if (r.status === "fulfilled" && r.value && Array.isArray(r.value.subtitles)) {
