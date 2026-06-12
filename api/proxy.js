@@ -91,7 +91,7 @@ async function buildDynamicBundleManifest(userAddons) {
         manifest.catalogs.forEach(cat => {
           if (!cat.id) return;
           const prefixedCat = { ...cat, id: `${slug}___${cat.id}` };
-          prefixedCat.name = `[${addon.name}] ${cat.name || ''}`.trim();
+          prefixedCat.name = (cat.name || '').trim();
           bundle.catalogs.push(prefixedCat);
         });
       }
