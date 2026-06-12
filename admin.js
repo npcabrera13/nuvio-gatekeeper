@@ -501,6 +501,28 @@ window.copyLink = (btnEl, id, customerName) => {
             }
         });
     }
+    
+    // Toggle advanced individual links
+    const toggleBtn = document.getElementById('toggle-individual-links');
+    const wrapper = document.getElementById('individual-links-wrapper');
+    if (toggleBtn && wrapper) {
+        // Reset state when opening modal
+        wrapper.classList.add('hidden');
+        toggleBtn.textContent = 'Show Advanced Individual Links';
+        
+        // Remove old listeners to prevent stacking
+        const newToggleBtn = toggleBtn.cloneNode(true);
+        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+        
+        newToggleBtn.addEventListener('click', () => {
+            wrapper.classList.toggle('hidden');
+            if (wrapper.classList.contains('hidden')) {
+                newToggleBtn.textContent = 'Show Advanced Individual Links';
+            } else {
+                newToggleBtn.textContent = 'Hide Advanced Individual Links';
+            }
+        });
+    }
 
     document.getElementById('links-modal').classList.remove('hidden');
 };

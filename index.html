@@ -242,10 +242,15 @@
                     </div>
                 </div>
 
-                <div class="form-divider"></div>
+                <!-- Toggle Button for Individual Links -->
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="toggle-individual-links" class="btn btn-ghost btn-sm">
+                        Show Advanced Individual Links
+                    </button>
+                </div>
 
-                <!-- One-by-One Section -->
-                <div class="link-section">
+                <!-- One-by-One Section (Hidden by Default) -->
+                <div id="individual-links-wrapper" class="link-section hidden" style="margin-top: 1rem;">
                     <h4 class="link-section-title">⚡ Individual Addon Links (One-by-One)</h4>
                     <p class="help-text">Directly route specific addons for this customer's token.</p>
                     <div id="individual-links-container" class="individual-links-container">
