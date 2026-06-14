@@ -1,25 +1,41 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-    getFirestore, collection, onSnapshot,
+    getFirestore, collection, getDocs,
     doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Configuration ──────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = "nuvio";
+const ADMIN_PASSWORD_HASH = "83f41b253eebe749bd32512d0985d2562207126cf1c10b1f8dabac552ed7f061";
+
+async function hashStr(str) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Vite compatibility wrapper for vanilla Express setup
+const envObj = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
 
 const firebaseConfig = {
-    apiKey: "AIzaSyC4OXdfVs_mXPinhmpAt2su8WKZhUDXWoQ",
-    authDomain: "multiaddon.firebaseapp.com",
-    projectId: "multiaddon",
-    storageBucket: "multiaddon.firebasestorage.app",
-    messagingSenderId: "963978475190",
-    appId: "1:963978475190:web:6796687180b021e049d817"
+    apiKey: envObj.VITE_FIREBASE_API_KEY || "AIzaSyC4OXdfVs_mXPinhmpAt2su8WKZhUDXWoQ",
+    authDomain: envObj.VITE_FIREBASE_AUTH_DOMAIN || "multiaddon.firebaseapp.com",
+    projectId: envObj.VITE_FIREBASE_PROJECT_ID || "multiaddon",
+    storageBucket: envObj.VITE_FIREBASE_STORAGE_BUCKET || "multiaddon.firebasestorage.app",
+    messagingSenderId: envObj.VITE_FIREBASE_MESSAGING_SENDER_ID || "963978475190",
+    appId: envObj.VITE_FIREBASE_APP_ID || "1:963978475190:web:6796687180b021e049d817"
 };
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const customersRef = collection(db, "customers");
-const globalSettingsRef = doc(db, 'settings', 'global');
+
+// ── Hardcoded Addons (must match api/proxy.js) ───────────────────────────────
+const ADDONS = [
+    { name: "Torrentio",      url: "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr/manifest.json", canBlock: true },
+    { name: "Open Subtitles", url: "https://opensubtitles-v3.strem.io/manifest.json", canBlock: false },
+    { name: "Cinemata",       url: "https://v3-cinemeta.strem.io/manifest.json", canBlock: false },
+    { name: "Anime Kitsu",    url: "https://anime-kitsu.strem.fun/manifest.json", canBlock: false },
+    { name: "AioMetadata",    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json", canBlock: false }
+];
 
 // ── DOM Refs ────────────────────────────────────────────────────────────────
 const loginOverlay  = document.getElementById('login-overlay');
@@ -38,17 +54,14 @@ const tokenModal    = document.getElementById('token-modal');
 const modalTitle    = document.getElementById('modal-title');
 const editTokenId   = document.getElementById('edit-token-id');
 const modalName     = document.getElementById('modal-name');
+const modalNotes    = document.getElementById('modal-notes');
 const modalTokenKey = document.getElementById('modal-token-key');
 const tokenKeyGroup = document.getElementById('token-key-group');
 const modalDays     = document.getElementById('modal-days');
 const daysGroup     = document.getElementById('days-group');
 const saveTokenBtn  = document.getElementById('save-token-btn');
 
-const globalSettingsModal = document.getElementById('global-settings-modal');
-const globalAddonList = document.getElementById('global-addon-list');
-const addGlobalAddonBtn = document.getElementById('add-global-addon-btn');
-const saveGlobalSettingsBtn = document.getElementById('save-global-settings-btn');
-const addonTemplate = document.getElementById('addon-template');
+
 
 const renewModal    = document.getElementById('renew-modal');
 const renewCustomerName = document.getElementById('renew-customer-name');
@@ -57,8 +70,7 @@ const confirmRenewBtn = document.getElementById('confirm-renew-btn');
 
 const toastEl       = document.getElementById('toast');
 
-let globalAddonsCache = [];
-let globalSupportUrlCache = '';
+
 
 // ── Toast Utility ───────────────────────────────────────────────────────────
 let toastTimer = null;
@@ -81,6 +93,7 @@ document.getElementById('open-create-modal').addEventListener('click', () => {
     modalTitle.textContent = "Create New Token";
     editTokenId.value = '';
     modalName.value = '';
+    modalNotes.value = '';
     modalDays.value = '30';
     modalTokenKey.value = '';
     tokenKeyGroup.classList.add('hidden');
@@ -93,133 +106,14 @@ function openEditModal(id, dataStr) {
     modalTitle.textContent = "Edit Token";
     editTokenId.value = id;
     modalName.value = data.name || '';
+    modalNotes.value = data.notes || '';
     modalTokenKey.value = id;
     tokenKeyGroup.classList.remove('hidden');
     daysGroup.classList.add('hidden'); // Editing days is done via Renew modal
     tokenModal.classList.remove('hidden');
 }
 
-// ── Global Settings Handlers ────────────────────────────────────────────────
-const globalAddonSearch = document.getElementById('global-addon-search');
-const globalAddonCount = document.getElementById('global-addon-count');
 
-function updateGlobalAddonCount() {
-    const items = document.querySelectorAll('#global-addon-list .addon-item');
-    if (globalAddonCount) globalAddonCount.textContent = `${items.length} Addon${items.length === 1 ? '' : 's'}`;
-}
-
-globalAddonSearch.addEventListener('input', function(e) {
-    const term = e.target.value.toLowerCase();
-    const items = document.querySelectorAll('#global-addon-list .addon-item');
-    items.forEach(item => {
-        const text = item.querySelector('.addon-name').value.toLowerCase() + " " + item.querySelector('.addon-url').value.toLowerCase();
-        item.style.display = text.includes(term) ? 'flex' : 'none';
-    });
-});
-
-document.getElementById('open-global-settings-modal').addEventListener('click', () => {
-    globalAddonList.innerHTML = '';
-    globalAddonSearch.value = '';
-    document.getElementById('global-support-url').value = globalSupportUrlCache || '';
-    
-    if (globalAddonsCache.length === 0) {
-        addAddonRow();
-    } else {
-        globalAddonsCache.forEach(a => addAddonRow(a.name, a.url));
-    }
-    updateGlobalAddonCount();
-    globalSettingsModal.classList.remove('hidden');
-});
-
-addGlobalAddonBtn.addEventListener('click', () => addAddonRow('', '', true));
-
-function addAddonRow(name = '', url = '', prepend = false) {
-    const clone = addonTemplate.content.cloneNode(true);
-    const row = clone.querySelector('.addon-item');
-    row.querySelector('.addon-name').value = name;
-    row.querySelector('.addon-url').value = url;
-    
-    row.querySelector('.remove-addon').addEventListener('click', () => {
-        row.remove();
-        updateGlobalAddonCount();
-    });
-
-    row.querySelector('.move-up').addEventListener('click', () => {
-        if (row.previousElementSibling) {
-            row.parentNode.insertBefore(row, row.previousElementSibling);
-        }
-    });
-
-    row.querySelector('.move-down').addEventListener('click', () => {
-        if (row.nextElementSibling) {
-            row.parentNode.insertBefore(row.nextElementSibling, row);
-        }
-    });
-    
-    if (prepend) {
-        globalAddonList.prepend(row);
-    } else {
-        globalAddonList.appendChild(row);
-    }
-    updateGlobalAddonCount();
-}
-
-function getAddonsFromForm() {
-    const addons = [];
-    document.querySelectorAll('.addon-item').forEach(row => {
-        const name = row.querySelector('.addon-name').value.trim();
-        let url = row.querySelector('.addon-url').value.trim();
-        
-        if (url) {
-            // Auto-correct common URL mistakes
-            if (url.startsWith('stremio://')) {
-                url = 'https://' + url.slice(10);
-            }
-            if (!url.endsWith('manifest.json')) {
-                if (url.endsWith('/')) {
-                    url = url.slice(0, -1);
-                }
-                url = url + '/manifest.json';
-            }
-            // Update the input field visually so the user sees the correction
-            row.querySelector('.addon-url').value = url;
-            
-            addons.push({ name: name || 'Addon', url });
-        }
-    });
-    return addons;
-}
-
-saveGlobalSettingsBtn.addEventListener('click', async () => {
-    const addons = getAddonsFromForm();
-    const supportUrl = document.getElementById('global-support-url').value.trim();
-    saveGlobalSettingsBtn.disabled = true;
-    saveGlobalSettingsBtn.textContent = "Saving...";
-
-    try {
-        await setDoc(globalSettingsRef, { addons, supportUrl }, { merge: true });
-        showToast('✅ Addons saved. Synchronizing Master Bundle...');
-        
-        try {
-            const syncRes = await fetch('/api/sync', { method: 'POST' });
-            if (syncRes.ok) {
-                showToast('✅ Master Bundle synchronized successfully.');
-            } else {
-                showToast('⚠️ Addons saved, but manifest sync failed.');
-            }
-        } catch (err) {
-            showToast('⚠️ Addons saved, but manifest sync failed.');
-        }
-
-        globalSettingsModal.classList.add('hidden');
-    } catch (e) {
-        console.error(e);
-        showToast('❌ Failed to save settings.');
-    }
-    
-    saveGlobalSettingsBtn.disabled = false;
-    saveGlobalSettingsBtn.textContent = "Save Settings";
-});
 
 // ── Save/Edit Token Logic ───────────────────────────────────────────────────
 saveTokenBtn.addEventListener('click', async () => {
@@ -256,8 +150,11 @@ saveTokenBtn.addEventListener('click', async () => {
             const newTokenId = modalTokenKey.value.trim();
             if (!newTokenId) throw new Error("Token ID cannot be empty");
 
+            const nameVal = modalName.value.trim();
+            const notesVal = modalNotes.value.trim();
             const updates = {
-                name: nameVal
+                name: nameVal,
+                notes: notesVal
             };
 
             if (oldId !== newTokenId) {
@@ -275,6 +172,7 @@ saveTokenBtn.addEventListener('click', async () => {
             }
         }
         tokenModal.classList.add('hidden');
+        loadData();
     } catch (e) {
         console.error(e);
         showToast('❌ ' + e.message);
@@ -314,6 +212,7 @@ confirmRenewBtn.addEventListener('click', async () => {
         });
         showToast(`✅ Added ${days} days.`);
         renewModal.classList.add('hidden');
+        loadData();
     } catch (e) {
         console.error(e);
         showToast('❌ Failed to renew.');
@@ -328,6 +227,7 @@ window.toggleStatus = async (id, currentStatus) => {
     try {
         await updateDoc(doc(db, "customers", id), { status: newStatus });
         showToast(`✅ Token ${newStatus}.`);
+        loadData();
     } catch (e) {
         console.error(e);
         showToast('❌ Failed to update status.');
@@ -339,6 +239,7 @@ window.deleteToken = async (id) => {
     try {
         await deleteDoc(doc(db, "customers", id));
         showToast('🗑️ Token deleted.');
+        loadData();
     } catch (e) {
         console.error(e);
         showToast('❌ Failed to delete token.');
@@ -567,23 +468,40 @@ function getExpiryInfo(expiresAt) {
     return { text: dateStr, daysLabel, isExpired: false };
 }
 
-// ── Load Data (Real-time) ───────────────────────────────────────────────────
-function loadData() {
-    // Listen to global settings
-    onSnapshot(globalSettingsRef, (snap) => {
-        if (snap.exists()) {
-            globalAddonsCache = snap.data().addons || [];
-            globalSupportUrlCache = snap.data().supportUrl || '';
+// ── Per-Addon Blocking ──────────────────────────────────────────────────────
+window.toggleAddonBlock = async function(tokenId, addonSlug) {
+    try {
+        const docRef = doc(db, "customers", tokenId);
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) return;
+        
+        let blockedAddons = snap.data().blockedAddons || [];
+        if (blockedAddons.includes(addonSlug)) {
+            blockedAddons = blockedAddons.filter(s => s !== addonSlug);
+            showToast(`Unblocked addon.`);
         } else {
-            globalAddonsCache = [];
-            globalSupportUrlCache = '';
+            blockedAddons.push(addonSlug);
+            showToast(`Blocked addon.`);
         }
-    });
+        
+        await updateDoc(docRef, { blockedAddons });
+        loadData(); // Refresh UI
+    } catch (err) {
+        console.error(err);
+        showToast('❌ Failed to toggle addon block');
+    }
+};
 
+// ── Load Data ───────────────────────────────────────────────────────────────
+async function loadData() {
     spinner.style.display = 'block';
     noCustomers.classList.add('hidden');
 
-    onSnapshot(customersRef, (snapshot) => {
+    try {
+        // Addons are hardcoded — no Firestore read needed for global settings
+
+        // 2. Fetch customers
+        const snapshot = await getDocs(customersRef);
         spinner.style.display = 'none';
         tbody.innerHTML = '';
 
@@ -604,6 +522,9 @@ function loadData() {
             const id     = docSnap.id;
             const name   = data.name   || 'Unnamed';
             const status = data.status || 'blocked';
+            const blockedAddons = data.blockedAddons || [];
+
+            const notes  = data.notes || '';
 
             const expiry = getExpiryInfo(data.expiresAt);
             const isBlocked  = status !== 'active';
@@ -621,9 +542,35 @@ function loadData() {
             const expiresMillis = data.expiresAt ? data.expiresAt.toMillis() : 0;
             const dataStr = encodeURIComponent(JSON.stringify(data));
 
+
+            // Generate Addon Block Buttons from hardcoded addon list
+            let addonBlockButtons = '';
+            ADDONS.filter(a => a.canBlock).forEach(addon => {
+                const slug = addon.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const isAddonBlocked = blockedAddons.includes(slug);
+                const safeAddonName = String(addon.name).replace(/"/g, '&quot;');
+                
+                addonBlockButtons += `
+                    <button class="btn-sm btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.3rem;" data-tip="${isAddonBlocked ? 'Unblock' : 'Block'} ${safeAddonName}" onclick="window.toggleAddonBlock('${id}', '${slug}')">
+                        ${isAddonBlocked
+                            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-orange);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="9" y1="12" x2="15" y2="12"></line></svg> Unblock ${safeAddonName}`
+                            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-green);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg> Block ${safeAddonName}`
+                        }
+                    </button>
+                `;
+            });
+
             const tr = document.createElement('tr');
+            
+            const safeNameHTML = String(name).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
+            const safeNotesHTML = String(notes).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
+            const safeNameJS = String(name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
             tr.innerHTML = `
-                <td class="cell-customer">${name}</td>
+                <td class="cell-customer">
+                    <div>${safeNameHTML}</div>
+                    ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
+                </td>
                 <td><span class="cell-token">${id}</span></td>
                 <td>
                     <div>${expiry.text}</div>
@@ -632,21 +579,22 @@ function loadData() {
                 <td>${statusBadge}</td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${name.replace(/'/g, "\\'")}')">
+                        <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${safeNameJS.replace(/"/g, '&quot;')}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </button>
                         <button class="btn-icon" data-tip="Edit" onclick="window.openEditModal('${id}', '${dataStr}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
-                        <button class="btn-icon" data-tip="Renew" onclick="window.openRenewModal('${id}', '${name}', ${expiresMillis})">
+                        <button class="btn-icon" data-tip="Renew" onclick="window.openRenewModal('${id}', '${safeNameJS.replace(/"/g, '&quot;')}', ${expiresMillis})">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                         </button>
-                        <button class="btn-icon" data-tip="${isBlocked ? 'Unblock' : 'Block'}" onclick="window.toggleStatus('${id}', '${status}')">
+                        <button class="btn-icon" data-tip="${isBlocked ? 'Unblock Account' : 'Block Account'}" onclick="window.toggleStatus('${id}', '${status}')">
                             ${isBlocked 
                                 ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
                                 : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`
                             }
                         </button>
+                        ${addonBlockButtons}
                         <button class="btn-icon text-red" data-tip="Delete" onclick="window.deleteToken('${id}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
@@ -665,14 +613,14 @@ function loadData() {
         const e = new Event('input');
         document.getElementById('roster-search').dispatchEvent(e);
         
-    }, (err) => {
+    } catch (err) {
         console.error(err);
         showToast('❌ Failed to load database.');
-    });
+    }
 }
 
 // ── Roster Search ───────────────────────────────────────────────────────────
-document.getElementById('roster-search').addEventListener('input', function(e) {
+document.getElementById('roster-search')?.addEventListener('input', function(e) {
     const term = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('#customers-tbody tr');
     rows.forEach(row => {
@@ -686,6 +634,10 @@ document.getElementById('roster-search').addEventListener('input', function(e) {
     });
 });
 
+document.getElementById('refresh-data-btn')?.addEventListener('click', () => {
+    loadData();
+});
+
 // ── Login Setup ─────────────────────────────────────────────────────────────
 function enterDashboard() {
     loginOverlay.classList.remove('active');
@@ -693,13 +645,14 @@ function enterDashboard() {
     loadData();
 }
 
-if (localStorage.getItem('nuvio_auth') === ADMIN_PASSWORD) {
+if (localStorage.getItem('nuvio_auth') === ADMIN_PASSWORD_HASH) {
     enterDashboard();
 }
 
-loginBtn.addEventListener('click', () => {
-    if (passwordInput.value === ADMIN_PASSWORD) {
-        localStorage.setItem('nuvio_auth', ADMIN_PASSWORD);
+loginBtn.addEventListener('click', async () => {
+    const inputHash = await hashStr(passwordInput.value);
+    if (inputHash === ADMIN_PASSWORD_HASH) {
+        localStorage.setItem('nuvio_auth', ADMIN_PASSWORD_HASH);
         enterDashboard();
     } else {
         loginError.textContent = "Incorrect password.";

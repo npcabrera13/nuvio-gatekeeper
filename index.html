@@ -49,10 +49,6 @@
                 <span class="brand-text">Nuvio</span>
             </div>
             <div style="display: flex; gap: 1rem;">
-                <button id="open-global-settings-modal" class="btn btn-outline">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    Global Settings
-                </button>
             </div>
         </nav>
 
@@ -97,6 +93,9 @@
                             <span class="input-icon"><i class="fas fa-search"></i></span>
                             <input type="text" id="roster-search" class="form-input" placeholder="Search tokens or names..." style="width: 250px; padding-left: 2.2rem; height: 34px; font-size: 0.85rem;">
                         </div>
+                        <button id="refresh-data-btn" class="btn btn-outline" style="margin-right: 1rem;" data-tip="Refresh Data">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        </button>
                         <button id="open-create-modal" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Create Token
                         </button>
@@ -140,6 +139,11 @@
                     <input type="text" id="modal-name" class="form-input" placeholder="e.g. John Doe">
                 </div>
 
+                <div class="form-group">
+                    <label>Notes (Email, Info, etc.)</label>
+                    <textarea id="modal-notes" class="form-input" placeholder="e.g. user@example.com" rows="2" style="resize: vertical;"></textarea>
+                </div>
+
                 <div class="form-group hidden" id="token-key-group">
                     <label>Token ID (API Key)</label>
                     <input type="text" id="modal-token-key" class="form-input" placeholder="e.g. nuvio_abc123xyz">
@@ -177,48 +181,7 @@
         </div>
     </div>
 
-    <!-- Global Settings Modal -->
-    <div id="global-settings-modal" class="overlay hidden">
-        <div class="modal-card premium-glass">
-            <div class="modal-header">
-                <h3>Global Settings</h3>
-                <button class="btn-icon close-modal" data-target="global-settings-modal">×</button>
-            </div>
-            <div class="modal-body">
-                <p class="help-text" style="margin-bottom: 1rem;">Configure the default addons applied to all customer tokens. Changes made here apply instantly to all customers.</p>
-                
-                <div class="form-group" style="margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
-                    <label for="global-support-url" style="display:flex; align-items:center; gap:0.5rem;">
-                        <i class="fas fa-headset" style="color: var(--accent);"></i> Support Contact URL (For Blocked Users)
-                    </label>
-                    <input type="url" id="global-support-url" class="form-input" placeholder="e.g. https://t.me/yourusername" style="width: 100%;">
-                    <p class="help-text" style="margin-top: 0.5rem; font-size: 0.8rem;">When a user is blocked or expired, they will see a stream that opens this link.</p>
-                </div>
-                
-                <div style="display:flex; justify-content:space-between; margin-bottom: 1rem; align-items:center;">
-                    <strong id="global-addon-count" style="font-size: 0.9rem; color: var(--text-muted);">0 Addons</strong>
-                    <div class="input-group" style="display: inline-flex;">
-                        <span class="input-icon"><i class="fas fa-search"></i></span>
-                        <input type="text" id="global-addon-search" class="form-input" placeholder="Search addons..." style="width: 200px; padding-left: 2.2rem; height: 32px; font-size: 0.85rem;">
-                    </div>
-                </div>
 
-                <div class="form-group addon-section">
-                    <div class="addon-header">
-                        <label>Configured Addons</label>
-                        <button id="add-global-addon-btn" class="btn-sm btn-outline">+ Add Addon</button>
-                    </div>
-                    <div id="global-addon-list" class="addon-list">
-                        <!-- Addon items will be injected here -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost close-modal" data-target="global-settings-modal">Cancel</button>
-                <button id="save-global-settings-btn" class="btn btn-glow">Save Settings</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Links Copy Modal -->
     <div id="links-modal" class="overlay hidden">

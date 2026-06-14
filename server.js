@@ -46,19 +46,15 @@ app.use(async (req, res, next) => {
     const prefix = stremioSegments[0]; // e.g. "manifest.json" or "stream"
     const p = stremioSegments.slice(1).join('/'); // e.g. "movie/tt1234.json"
 
-    Object.defineProperty(req, 'query', {
-        value: {
-            token: token,
-            addon: addon,
-            prefix: prefix,
-            p: p
-        },
-        writable: true,
-        configurable: true
-    });
+    // Attach parsed params under a custom property to avoid Express 5 getter conflict
+    req._nuvio = {
+      token:  token  || null,
+      addon:  addon  || null,
+      prefix: prefix || "",
+      p:      p      || "",
+    };
 
-    console.log(`[Server] Routing → token=${token} addon=${addon} prefix=${prefix} p=${p}`);
-    console.log("[Server] req.query:", req.query);
+    console.log("[Server] Parsed →", req._nuvio);
 
     try {
         await handler(req, res);
