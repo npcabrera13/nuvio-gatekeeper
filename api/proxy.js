@@ -26,7 +26,7 @@ function getDb() {
 // ─── Customer Cache (30s TTL) ────────────────────────────────────────────────
 // Reduces Firestore reads: same token reused within 30s = 0 extra reads
 const _customerCache = new Map();
-const CUSTOMER_TTL = 30_000;
+const CUSTOMER_TTL = 900_000; // 15 minutes
 
 async function getCustomerData(token) {
   const now = Date.now();
@@ -81,7 +81,11 @@ const HARDCODED_MANIFEST = {
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
   types: ["movie", "series", "anime"],
-  catalogs: [],
+  catalogs: [
+    { type: 'movie', id: 'cinemata___top', name: 'Popular' },
+    { type: 'series', id: 'cinemata___top', name: 'Popular' },
+    { type: 'anime', id: 'animekitsu___top', name: 'Popular' }
+  ],
   idPrefixes: ["tt", "kitsu"],
   behaviorHints: { configurable: false }
 };
@@ -124,9 +128,15 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS
 
 async function fetchAddonJson(addon, stremioPath) {
   const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
-  const url = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
+  let targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
+
+  // Route Torrentio requests through a proxy to avoid Vercel IP bans
+  if (addon.name === "Torrentio") {
+    targetUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+  }
+
   try {
-    const res = await fetchWithTimeout(url, { method: "GET" });
+    const res = await fetchWithTimeout(targetUrl, { method: "GET" });
     if (!res.ok) return null;
     return await res.json();
   } catch (e) {
@@ -240,18 +250,22 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ meta: {} });
   }
 
-  // Streams — redirect to Torrentio directly instead of proxying.
-  // Torrentio blocks Vercel data center IPs. A 302 redirect makes Stremio
-  // fetch using the user's own IP, which Torrentio accepts normally.
+  // Streams — PROXY the request and merge results instead of redirecting
   if (stremioPath.startsWith("stream/")) {
     const streamAddons = ALL_ADDONS.filter(a => a.resources.includes("stream"));
     if (streamAddons.length === 0) return res.status(200).json({ streams: [] });
 
-    // Redirect to the first (and only) stream addon — Torrentio
-    const baseUrl = streamAddons[0].url.replace(/\/manifest\.json$/, "");
-    const targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
-    res.setHeader("Cache-Control", "no-store");
-    return res.redirect(302, targetUrl);
+    // Fetch streams from all stream-capable addons concurrently
+    const results = await Promise.allSettled(streamAddons.map(a => fetchAddonJson(a, stremioPath)));
+    const mergedStreams = [];
+    
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value && Array.isArray(r.value.streams)) {
+        mergedStreams.push(...r.value.streams);
+      }
+    }
+    
+    return res.status(200).json({ streams: mergedStreams });
   }
 
   // Subtitles — ask only Open Subtitles (subtitle-capable addons)
