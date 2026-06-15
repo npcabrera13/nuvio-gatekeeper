@@ -240,20 +240,18 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ meta: {} });
   }
 
-  // Streams — ask only Torrentio (stream-capable addons)
+  // Streams — redirect to Torrentio directly instead of proxying.
+  // Torrentio blocks Vercel data center IPs. A 302 redirect makes Stremio
+  // fetch using the user's own IP, which Torrentio accepts normally.
   if (stremioPath.startsWith("stream/")) {
     const streamAddons = ALL_ADDONS.filter(a => a.resources.includes("stream"));
-    const results = await Promise.allSettled(streamAddons.map(a => fetchAddonJson(a, stremioPath)));
-    const mergedStreams = [];
-    results.forEach((r, i) => {
-      if (r.status === "fulfilled" && r.value && Array.isArray(r.value.streams)) {
-        r.value.streams.forEach(s => {
-          s.name = s.name ? `[${streamAddons[i].name}] ${s.name}` : `[${streamAddons[i].name}]`;
-          mergedStreams.push(s);
-        });
-      }
-    });
-    return res.status(200).json({ streams: mergedStreams });
+    if (streamAddons.length === 0) return res.status(200).json({ streams: [] });
+
+    // Redirect to the first (and only) stream addon — Torrentio
+    const baseUrl = streamAddons[0].url.replace(/\/manifest\.json$/, "");
+    const targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
+    res.setHeader("Cache-Control", "no-store");
+    return res.redirect(302, targetUrl);
   }
 
   // Subtitles — ask only Open Subtitles (subtitle-capable addons)
