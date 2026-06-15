@@ -469,29 +469,7 @@ function getExpiryInfo(expiresAt) {
     return { text: dateStr, daysLabel, isExpired: false };
 }
 
-// ── Per-Addon Blocking ──────────────────────────────────────────────────────
-window.toggleAddonBlock = async function(tokenId, addonSlug) {
-    try {
-        const docRef = doc(db, "customers", tokenId);
-        const snap = await getDoc(docRef);
-        if (!snap.exists()) return;
-        
-        let blockedAddons = snap.data().blockedAddons || [];
-        if (blockedAddons.includes(addonSlug)) {
-            blockedAddons = blockedAddons.filter(s => s !== addonSlug);
-            showToast(`Unblocked addon.`);
-        } else {
-            blockedAddons.push(addonSlug);
-            showToast(`Blocked addon.`);
-        }
-        
-        await updateDoc(docRef, { blockedAddons });
-        loadData(); // Refresh UI
-    } catch (err) {
-        console.error(err);
-        showToast('❌ Failed to toggle addon block');
-    }
-};
+
 
 // ── Load Data ───────────────────────────────────────────────────────────────
 async function loadData() {
@@ -523,7 +501,6 @@ async function loadData() {
             const id     = docSnap.id;
             const name   = data.name   || 'Unnamed';
             const status = data.status || 'blocked';
-            const blockedAddons = data.blockedAddons || [];
 
             const notes  = data.notes || '';
 
@@ -544,22 +521,7 @@ async function loadData() {
             const dataStr = encodeURIComponent(JSON.stringify(data));
 
 
-            // Generate Addon Block Buttons from hardcoded addon list
-            let addonBlockButtons = '';
-            ADDONS.filter(a => a.canBlock).forEach(addon => {
-                const slug = addon.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const isAddonBlocked = blockedAddons.includes(slug);
-                const safeAddonName = String(addon.name).replace(/"/g, '&quot;');
-                
-                addonBlockButtons += `
-                    <button class="btn-sm btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.3rem;" data-tip="${isAddonBlocked ? 'Unblock' : 'Block'} ${safeAddonName}" onclick="window.toggleAddonBlock('${id}', '${slug}')">
-                        ${isAddonBlocked
-                            ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-orange);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="9" y1="12" x2="15" y2="12"></line></svg> Unblock ${safeAddonName}`
-                            : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-green);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg> Block ${safeAddonName}`
-                        }
-                    </button>
-                `;
-            });
+
 
             const tr = document.createElement('tr');
             
@@ -595,7 +557,7 @@ async function loadData() {
                                 : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`
                             }
                         </button>
-                        ${addonBlockButtons}
+
                         <button class="btn-icon text-red" data-tip="Delete" onclick="window.deleteToken('${id}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
