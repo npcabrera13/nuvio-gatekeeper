@@ -6,7 +6,7 @@ const handler = require('./api/proxy.js');
 console.log("[Server] Loaded proxy handler from:", require.resolve('./api/proxy.js'));
 
 // Stremio resource types (used to detect proxy requests)
-const STREMIO_RESOURCES = ['manifest.json', 'stream', 'catalog', 'meta'];
+const STREMIO_RESOURCES = ['manifest.json', 'stream', 'catalog', 'meta', 'subtitles'];
 
 // ── Proxy middleware FIRST (before static files) ────────────────────────────
 app.use(async (req, res, next) => {

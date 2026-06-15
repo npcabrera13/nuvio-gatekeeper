@@ -158,11 +158,8 @@ module.exports = async function handler(req, res) {
 
   const addonKey = params.addon || null;
 
-  // ── Per-addon blocking: read customer data only for stream requests ────────
+  // ── Stream requests: validate customer token (1 Firestore read) ───────────
   // Catalog, meta, subtitles are free — only STREAMS need token validation.
-  // This cuts Firestore reads by ~75%.
-  let userAddons = ALL_ADDONS;
-
   if (stremioPath.startsWith("stream/") || addonKey) {
     const customerData = await getCustomerData(token);
 
@@ -185,16 +182,13 @@ module.exports = async function handler(req, res) {
         }]
       });
     }
-    // Filter out per-addon blocked addons for this customer
-    const blockedAddons = customerData?.blockedAddons || [];
-    userAddons = ALL_ADDONS.filter(a => !blockedAddons.includes(getAddonSlug(a.name)));
   }
 
   console.log(`[Proxy] ${token} | addon=${addonKey || "bundle"} | path=${stremioPath}`);
 
   // ── Single Addon Mode (individual addon link) ─────────────────────────────
   if (addonKey) {
-    const targetAddon = userAddons.find(a => getAddonSlug(a.name) === addonKey);
+    const targetAddon = ALL_ADDONS.find(a => getAddonSlug(a.name) === addonKey);
     if (!targetAddon) return res.status(404).json({ error: "Addon not found" });
 
     const baseUrl = targetAddon.url.replace(/\/manifest\.json$/, "");
@@ -225,7 +219,7 @@ module.exports = async function handler(req, res) {
       if (splitIndex !== -1) {
         const targetSlug = catId.slice(0, splitIndex);
         const originalId = catId.slice(splitIndex + 3);
-        const targetAddon = userAddons.find(a => getAddonSlug(a.name) === targetSlug);
+        const targetAddon = ALL_ADDONS.find(a => getAddonSlug(a.name) === targetSlug);
         if (targetAddon) {
           parts[2] = originalId + (hasJson ? ".json" : "");
           const upstreamData = await fetchAddonJson(targetAddon, parts.join("/"));
@@ -238,7 +232,7 @@ module.exports = async function handler(req, res) {
 
   // Meta — ask only addons that support meta, return first valid result
   if (stremioPath.startsWith("meta/")) {
-    const metaAddons = userAddons.filter(a => a.resources.includes("meta"));
+    const metaAddons = ALL_ADDONS.filter(a => a.resources.includes("meta"));
     const results = await Promise.allSettled(metaAddons.map(a => fetchAddonJson(a, stremioPath)));
     for (const r of results) {
       if (r.status === "fulfilled" && r.value?.meta) return res.status(200).json(r.value);
@@ -248,7 +242,7 @@ module.exports = async function handler(req, res) {
 
   // Streams — ask only Torrentio (stream-capable addons)
   if (stremioPath.startsWith("stream/")) {
-    const streamAddons = userAddons.filter(a => a.resources.includes("stream"));
+    const streamAddons = ALL_ADDONS.filter(a => a.resources.includes("stream"));
     const results = await Promise.allSettled(streamAddons.map(a => fetchAddonJson(a, stremioPath)));
     const mergedStreams = [];
     results.forEach((r, i) => {
@@ -264,7 +258,7 @@ module.exports = async function handler(req, res) {
 
   // Subtitles — ask only Open Subtitles (subtitle-capable addons)
   if (stremioPath.startsWith("subtitles/")) {
-    const subAddons = userAddons.filter(a => a.resources.includes("subtitles"));
+    const subAddons = ALL_ADDONS.filter(a => a.resources.includes("subtitles"));
     const results = await Promise.allSettled(subAddons.map(a => fetchAddonJson(a, stremioPath)));
     const mergedSubs = [];
     results.forEach(r => {
