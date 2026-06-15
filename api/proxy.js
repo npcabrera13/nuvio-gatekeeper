@@ -26,7 +26,7 @@ function getDb() {
 // ─── Customer Cache (30s TTL) ────────────────────────────────────────────────
 // Reduces Firestore reads: same token reused within 30s = 0 extra reads
 const _customerCache = new Map();
-const CUSTOMER_TTL = 900_000; // 15 minutes
+const CUSTOMER_TTL = 60_000; // 1 minute
 
 async function getCustomerData(token) {
   const now = Date.now();
@@ -180,12 +180,11 @@ module.exports = async function handler(req, res) {
 
   const addonKey = params.addon || null;
 
-  // ── Stream requests: validate customer token (1 Firestore read) ───────────
-  // Catalog, meta, subtitles are free — only STREAMS need token validation.
+  let isBlocked = false;
+  // ── Validate customer token (1 Firestore read) ───────────
   if (stremioPath.startsWith("stream/") || addonKey) {
     const customerData = await getCustomerData(token);
 
-    let isBlocked = false;
     if (!customerData || customerData.status !== "active") {
       isBlocked = true;
     } else if (customerData.expiresAt) {
@@ -194,22 +193,15 @@ module.exports = async function handler(req, res) {
         : new Date(customerData.expiresAt).getTime();
       if (Date.now() > expMillis) isBlocked = true;
     }
-
-    if (isBlocked && stremioPath.startsWith("stream/")) {
-      return res.status(200).json({
-        streams: [{
-          name: "Nuvio Gatekeeper",
-          title: "🚫 Access Blocked / Expired\nClick here to contact support and renew.",
-          externalUrl: SUPPORT_URL || undefined
-        }]
-      });
-    }
   }
 
   console.log(`[Proxy] ${token} | addon=${addonKey || "bundle"} | path=${stremioPath}`);
 
   // ── Single Addon Mode (individual addon link) ─────────────────────────────
   if (addonKey) {
+    if (isBlocked && stremioPath.startsWith("stream/")) {
+      return res.status(200).json({ streams: [] });
+    }
     const targetAddon = ALL_ADDONS.find(a => getAddonSlug(a.name) === addonKey);
     if (!targetAddon) return res.status(404).json({ error: "Addon not found" });
 
@@ -230,54 +222,97 @@ module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
 
-  // Catalogs — route to the specific addon that owns this catalog
+  // ==========================================
+  // 📺 CATALOGS (Fixes the Cinemata 404 Error)
+  // ==========================================
   if (stremioPath.startsWith("catalog/")) {
-    const parts = stremioPath.split("/");
-    if (parts.length >= 3) {
-      let catIdRaw = parts[2];
-      const hasJson = catIdRaw.endsWith(".json");
-      const catId = hasJson ? catIdRaw.slice(0, -5) : catIdRaw;
-      const splitIndex = catId.indexOf("___");
-      if (splitIndex !== -1) {
-        const targetSlug = catId.slice(0, splitIndex);
-        const originalId = catId.slice(splitIndex + 3);
-        const targetAddon = ALL_ADDONS.find(a => getAddonSlug(a.name) === targetSlug);
-        if (targetAddon) {
-          parts[2] = originalId + (hasJson ? ".json" : "");
-          const upstreamData = await fetchAddonJson(targetAddon, parts.join("/"));
-          return res.status(200).json(upstreamData || { metas: [] });
-        }
-      }
+    const parts = stremioPath.split("/"); 
+    const type = parts[1]; // movie, series, anime
+    const fileName = parts[2]; // e.g., cinemata___top.json
+    
+    let targetUrl = "";
+
+    // Translate your custom prefix to Cinemeta's real ID
+    if (fileName && fileName.startsWith("cinemata___")) {
+      const realId = fileName.replace("cinemata___", "").replace(".json", "");
+      targetUrl = `https://v3-cinemeta.strem.io/catalog/${type}/${realId}.json`;
+    } 
+    else if (fileName && fileName.startsWith("animekitsu___")) {
+      const realId = fileName.replace("animekitsu___", "").replace(".json", "");
+      targetUrl = `https://anime-kitsu.strem.fun/catalog/${type}/${realId}.json`;
     }
-    return res.status(200).json({ metas: [] });
+
+    if (targetUrl) {
+      try {
+        const catRes = await fetch(targetUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+        });
+        if (catRes.ok) return res.json(await catRes.json());
+      } catch (e) { console.error("[Catalog] Error:", e.message); }
+    }
+    return res.status(200).json({ metas: [] }); 
   }
 
-  // Meta — ask only addons that support meta, return first valid result
+  // ==========================================
+  // 🖼️ METADATA (Fixes Posters & Descriptions)
+  // ==========================================
   if (stremioPath.startsWith("meta/")) {
-    const metaAddons = ALL_ADDONS.filter(a => a.resources.includes("meta"));
-    const results = await Promise.allSettled(metaAddons.map(a => fetchAddonJson(a, stremioPath)));
-    for (const r of results) {
-      if (r.status === "fulfilled" && r.value?.meta) return res.status(200).json(r.value);
+    let targetUrl = "";
+
+    // Route IMDB IDs (tt123) to Cinemeta
+    if (stremioPath.includes("/tt")) {
+      targetUrl = `https://v3-cinemeta.strem.io/${stremioPath}`;
+    } 
+    // Route Kitsu IDs to Anime Kitsu
+    else if (stremioPath.includes("/kitsu")) {
+      targetUrl = `https://anime-kitsu.strem.fun/${stremioPath}`;
     }
-    return res.status(200).json({ meta: {} });
+
+    if (targetUrl) {
+      try {
+        const metaRes = await fetch(targetUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+        });
+        if (metaRes.ok) return res.json(await metaRes.json());
+      } catch (e) { console.error("[Meta] Error:", e.message); }
+    }
+    return res.status(200).json({ meta: null });
   }
 
-  // Streams — PROXY the request and merge results instead of redirecting
+  // ==========================================
+  // 🎬 STREAMS (Blocks Torrents + Torrentio Fix)
+  // ==========================================
   if (stremioPath.startsWith("stream/")) {
-    const streamAddons = ALL_ADDONS.filter(a => a.resources.includes("stream"));
-    if (streamAddons.length === 0) return res.status(200).json({ streams: [] });
-
-    const results = await Promise.allSettled(streamAddons.map(a => fetchAddonJson(a, stremioPath)));
-    const mergedStreams = [];
     
-    for (const r of results) {
-      if (r.status === "fulfilled" && r.value && Array.isArray(r.value.streams)) {
-        mergedStreams.push(...r.value.streams);
+    // 🛑 BLOCK BLOCKED/EXPIRED USERS INSTANTLY
+    if (isBlocked) {
+      console.log(`[Gatekeeper] Blocked streams for token: ${token}`);
+      // Returns empty. Nuvio will just show "No streams available"
+      return res.status(200).json({ streams: [] }); 
+    }
+
+    // Fetch from Torrentio (with Chrome User-Agent to bypass Vercel IP blocks)
+    const torrentioBaseUrl = "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr";
+    const targetStreamUrl = `${torrentioBaseUrl}/${stremioPath}`;
+    
+    try {
+      const streamRes = await fetch(targetStreamUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json"
+        }
+      });
+      
+      if (streamRes.ok) {
+        const data = await streamRes.json();
+        return res.status(200).json(data);
       }
+    } catch (e) {
+      console.error("[Stream] Torrentio fetch error:", e.message);
     }
     
-    console.log(`[Streams] Successfully aggregated ${mergedStreams.length} streams.`);
-    return res.status(200).json({ streams: mergedStreams });
+    // Fallback if Torrentio fails
+    return res.status(200).json({ streams: [] });
   }
 
   // Subtitles — ask only Open Subtitles (subtitle-capable addons)
