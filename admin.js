@@ -350,7 +350,7 @@ function copyToClipboard(text) {
 }
 
 window.copyLink = (btnEl, id, customerName) => {
-    const addons = globalAddonsCache;
+    const addons = ADDONS;
     // Use production URL so links work correctly even when admin is accessed from localhost
     const baseUrl = 'https://nuviostreamapi.vercel.app';
 
