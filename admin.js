@@ -142,7 +142,7 @@ saveTokenBtn.addEventListener('click', async () => {
             showToast('✅ Token generated successfully.');
             
             // Auto copy bundle link immediately!
-            copyToClipboard(`${window.location.origin}/${randomId}/manifest.json`);
+            copyToClipboard(`https://nuviostreamapi.vercel.app/${randomId}/manifest.json`);
             
         } else {
             // Edit
@@ -351,7 +351,8 @@ function copyToClipboard(text) {
 
 window.copyLink = (btnEl, id, customerName) => {
     const addons = globalAddonsCache;
-    const baseUrl = window.location.origin;
+    // Use production URL so links work correctly even when admin is accessed from localhost
+    const baseUrl = 'https://nuviostreamapi.vercel.app';
 
     // Set header info
     document.getElementById('links-customer-name').textContent = customerName;
