@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Secure reverse-proxy gatekeeper for Nuvio/Stremio streaming via Torrentio",
   "private": true,
+  "scripts": {
+    "deploy": "node -e \"fetch('https://api.vercel.com/v1/integrations/deploy/prj_eWnIorYIJxDwXUgvWdpl1JQDMC2H/cxtIr1mnBE', { method: 'POST' }).then(() => console.log('Deployment triggered!'))\""
+  },
   "dependencies": {
     "express": "^5.2.1",
     "firebase": "^10.12.0",
