@@ -128,18 +128,30 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = BUNDLE_TIMEOUT_MS
 
 async function fetchAddonJson(addon, stremioPath) {
   const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
-  let targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
-
-  // Route Torrentio requests through a proxy to avoid Vercel IP bans
-  if (addon.name === "Torrentio") {
-    targetUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-  }
+  const targetUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
+  
+  // DO NOT USE corsproxy.io - it returns 403 for Torrentio!
+  // Fetch directly with browser headers to bypass basic bot checks.
 
   try {
-    const res = await fetchWithTimeout(targetUrl, { method: "GET" });
-    if (!res.ok) return null;
+    const res = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        // THIS IS THE MAGIC: Makes Vercel look like a real Chrome browser
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9"
+      }
+    });
+    
+    if (!res.ok) {
+      console.error(`[Fetch] ${addon.name} failed with status: ${res.status}`);
+      return null;
+    }
+    
     return await res.json();
   } catch (e) {
+    console.error(`[Fetch] ${addon.name} error:`, e.message);
     return null;
   }
 }
@@ -255,7 +267,6 @@ module.exports = async function handler(req, res) {
     const streamAddons = ALL_ADDONS.filter(a => a.resources.includes("stream"));
     if (streamAddons.length === 0) return res.status(200).json({ streams: [] });
 
-    // Fetch streams from all stream-capable addons concurrently
     const results = await Promise.allSettled(streamAddons.map(a => fetchAddonJson(a, stremioPath)));
     const mergedStreams = [];
     
@@ -265,6 +276,7 @@ module.exports = async function handler(req, res) {
       }
     }
     
+    console.log(`[Streams] Successfully aggregated ${mergedStreams.length} streams.`);
     return res.status(200).json({ streams: mergedStreams });
   }
 
