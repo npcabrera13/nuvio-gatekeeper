@@ -287,6 +287,8 @@ module.exports = async function handler(req, res) {
     // 🛑 BLOCK BLOCKED/EXPIRED USERS INSTANTLY
     if (isBlocked) {
       console.log(`[Gatekeeper] Blocked streams for token: ${token}`);
+      // 🛑 Tells Nuvio "Do not save this empty response in your memory"
+      res.setHeader("Cache-Control", "no-store, max-age=0"); 
       // Returns empty. Nuvio will just show "No streams available"
       return res.status(200).json({ streams: [] }); 
     }
@@ -305,6 +307,8 @@ module.exports = async function handler(req, res) {
       
       if (streamRes.ok) {
         const data = await streamRes.json();
+        // Cache successful streams for 1 hour to speed up app
+        res.setHeader("Cache-Control", "public, max-age=3600");
         return res.status(200).json(data);
       }
     } catch (e) {
