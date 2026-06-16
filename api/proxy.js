@@ -43,6 +43,21 @@ async function getCustomerData(token) {
 // Each addon has: name, url, and which resources it supports.
 const ALL_ADDONS = [
   {
+    name: "Cinemeta",
+    url: "https://v3-cinemeta.strem.io/manifest.json",
+    resources: ["catalog", "meta"]
+  },
+  {
+    name: "Tomatometadata",
+    url: "https://7a82163c306e-rottentomatoes.baby-beamup.club/manifest.json", 
+    resources: ["catalog", "meta"]
+  },
+  {
+    name: "AnimeKitsu",
+    url: "https://anime-kitsu.strem.fun/manifest.json",
+    resources: ["catalog", "meta"]
+  },
+  {
     name: "Torrentio",
     url: "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr/manifest.json",
     resources: ["stream"]
@@ -51,21 +66,6 @@ const ALL_ADDONS = [
     name: "Open Subtitles",
     url: "https://opensubtitles-v3.strem.io/manifest.json",
     resources: ["subtitles"]
-  },
-  {
-    name: "Cinemata",
-    url: "https://v3-cinemeta.strem.io/manifest.json",
-    resources: ["meta", "catalog"]
-  },
-  {
-    name: "Anime Kitsu",
-    url: "https://anime-kitsu.strem.fun/manifest.json",
-    resources: ["meta", "catalog"]
-  },
-  {
-    name: "AioMetadata",
-    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json",
-    resources: ["meta"]
   }
 ];
 
@@ -82,9 +82,20 @@ const HARDCODED_MANIFEST = {
   resources: ["stream", "meta", "catalog", "subtitles"],
   types: ["movie", "series", "anime"],
   catalogs: [
-    { type: 'movie', id: 'cinemata___top', name: 'Popular' },
-    { type: 'series', id: 'cinemata___top', name: 'Popular' },
-    { type: 'anime', id: 'animekitsu___top', name: 'Popular' }
+    // Cinemeta (Supports genres like Action, and years like 2024)
+    { type: "movie", id: "cinemeta___top", name: "Popular Movies" },
+    { type: "series", id: "cinemeta___top", name: "Popular Series" },
+    { type: "movie", id: "cinemeta___year", name: "New Movies" },
+    { type: "movie", id: "cinemeta___imdbRating", name: "Featured Movies" },
+    { type: "series", id: "cinemeta___imdbRating", name: "Featured Series" },
+    
+    // Tomatometadata / MDBList
+    { type: "movie", id: "tomatometadata___mdblist.88328", name: "MDBList Custom" },
+    
+    // Anime Kitsu (Using real Kitsu catalog IDs)
+    { type: "anime", id: "animekitsu___kitsu-anime-trending", name: "Trending Anime" },
+    { type: "anime", id: "animekitsu___kitsu-anime-popular", name: "Popular Anime" },
+    { type: "anime", id: "animekitsu___kitsu-anime-airing", name: "Top Airing Anime" }
   ],
   idPrefixes: ["tt", "kitsu"],
   behaviorHints: { configurable: false }
@@ -223,58 +234,93 @@ module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
 
   // ==========================================
-  // 📺 CATALOGS (Fixes the Cinemata 404 Error)
+  // 📺 UNIVERSAL CATALOG ROUTER
   // ==========================================
   if (stremioPath.startsWith("catalog/")) {
-    const parts = stremioPath.split("/"); 
-    const type = parts[1]; // movie, series, anime
-    const fileName = parts[2]; // e.g., cinemata___top.json
+    // 1. Parse the path: catalog/movie/cinemeta___imdbRating/genre=Action.json
+    const cleanPath = stremioPath.replace(/^catalog\//, "").replace(/\.json$/, "");
+    const segments = cleanPath.split("/");
     
-    let targetUrl = "";
+    const type = segments[0]; // movie, series, anime
+    const fullIdSegment = segments[1]; // cinemeta___imdbRating
+    const extrasSegments = segments.slice(2); // ["genre=Action", "skip=100"]
 
-    // Translate your custom prefix to Cinemeta's real ID
-    if (fileName && fileName.startsWith("cinemata___")) {
-      const realId = fileName.replace("cinemata___", "").replace(".json", "");
-      targetUrl = `https://v3-cinemeta.strem.io/catalog/${type}/${realId}.json`;
-    } 
-    else if (fileName && fileName.startsWith("animekitsu___")) {
-      const realId = fileName.replace("animekitsu___", "").replace(".json", "");
-      targetUrl = `https://anime-kitsu.strem.fun/catalog/${type}/${realId}.json`;
-    }
+    if (fullIdSegment && fullIdSegment.includes("___")) {
+      const [addonPrefix, ...realIdParts] = fullIdSegment.split("___");
+      const realId = realIdParts.join("___");
+      
+      // Find addon (case-insensitive, ignores spaces)
+      const targetAddon = ALL_ADDONS.find(a => 
+        a.name.toLowerCase().replace(/\s+/g, "") === addonPrefix.toLowerCase()
+      );
 
-    if (targetUrl) {
-      try {
-        const catRes = await fetch(targetUrl, {
-          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
-        });
-        if (catRes.ok) return res.json(await catRes.json());
-      } catch (e) { console.error("[Catalog] Error:", e.message); }
+      if (targetAddon && targetAddon.resources.includes("catalog")) {
+        const baseUrl = targetAddon.url.replace(/\/manifest\.json$/, "");
+        
+        // Reconstruct URL with all extras preserved!
+        const extrasString = extrasSegments.length > 0 ? `/${extrasSegments.join("/")}` : "";
+        const targetUrl = `${baseUrl}/catalog/${type}/${realId}${extrasString}.json`;
+        
+        try {
+          const catRes = await fetch(targetUrl, {
+            headers: { 
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "application/json"
+            }
+          });
+          
+          if (catRes.ok) {
+            res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+            return res.json(await catRes.json());
+          } else {
+            console.error(`[Catalog] Upstream ${targetAddon.name} failed: ${catRes.status} for ${targetUrl}`);
+          }
+        } catch (e) { 
+          console.error(`[Catalog] Fetch error for ${targetAddon.name}:`, e.message); 
+        }
+      } else {
+         console.error(`[Catalog] Addon not found or no catalog resource for prefix: ${addonPrefix}`);
+      }
     }
-    return res.status(200).json({ metas: [] }); 
+    return res.status(200).json({ metas: [] }); // Fallback empty
   }
 
   // ==========================================
-  // 🖼️ METADATA (Fixes Posters & Descriptions)
+  // 🖼️ UNIVERSAL META ROUTER
   // ==========================================
   if (stremioPath.startsWith("meta/")) {
-    let targetUrl = "";
-
-    // Route IMDB IDs (tt123) to Cinemeta
-    if (stremioPath.includes("/tt")) {
-      targetUrl = `https://v3-cinemeta.strem.io/${stremioPath}`;
-    } 
-    // Route Kitsu IDs to Anime Kitsu
-    else if (stremioPath.includes("/kitsu")) {
-      targetUrl = `https://anime-kitsu.strem.fun/${stremioPath}`;
+    // meta/movie/tt123456.json OR meta/anime/kitsu:1234.json
+    const cleanPath = stremioPath.replace(/\.json$/, "");
+    const segments = cleanPath.split("/");
+    const type = segments[1];
+    const id = segments[2];
+    
+    let targetAddon = null;
+    
+    if (id && id.startsWith("tt")) {
+      targetAddon = ALL_ADDONS.find(a => a.name.toLowerCase().includes("cinemeta"));
+    } else if (id && id.startsWith("kitsu:")) {
+      targetAddon = ALL_ADDONS.find(a => a.name.toLowerCase().includes("kitsu"));
     }
 
-    if (targetUrl) {
+    if (targetAddon && targetAddon.resources.includes("meta")) {
+      const baseUrl = targetAddon.url.replace(/\/manifest\.json$/, "");
+      const targetUrl = `${baseUrl}/meta/${type}/${id}.json`;
+      
       try {
         const metaRes = await fetch(targetUrl, {
-          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          headers: { 
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json"
+          }
         });
-        if (metaRes.ok) return res.json(await metaRes.json());
-      } catch (e) { console.error("[Meta] Error:", e.message); }
+        if (metaRes.ok) {
+           res.setHeader("Cache-Control", "public, max-age=86400"); // Cache meta for 24h
+           return res.json(await metaRes.json());
+        }
+      } catch (e) {
+        console.error(`[Meta] Fetch error for ${targetAddon.name}:`, e.message);
+      }
     }
     return res.status(200).json({ meta: null });
   }
