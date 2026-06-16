@@ -119,7 +119,7 @@ const HARDCODED_MANIFEST = {
     { type: "anime", id: "animekitsu___kitsu-anime-airing", name: "Top Airing Anime",
       extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
       genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
-    { type: "anime", id: "animekitsu___kitsu-anime-rating", name: "Highest Rated Anime",
+    { type: "anime", id: "aiometadata___mdblist.105461", name: "Popular Anime Series",
       extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
       genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
 
@@ -315,7 +315,7 @@ module.exports = async function handler(req, res) {
       
       // Find addon (case-insensitive, ignores spaces)
       const targetAddon = ALL_ADDONS.find(a => 
-        a.name.toLowerCase().replace(/\s+/g, "") === addonPrefix.toLowerCase()
+        a.name.toLowerCase().replace(/\s+/g, "") === addonPrefix.toLowerCase().replace(/\s+/g, "")
       );
 
       if (targetAddon && targetAddon.resources.includes("catalog")) {
