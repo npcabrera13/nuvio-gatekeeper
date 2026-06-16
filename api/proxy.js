@@ -172,7 +172,26 @@ function getAddonSlug(addonName) {
 function encodeStremioPath(stremioPath) {
   return stremioPath
     .split('/')
-    .map(segment => segment.replace(/ /g, '%20'))
+    .map(segment => {
+      const parts = segment.split('&');
+      const mergedParts = [];
+      for (const part of parts) {
+        if (!part.includes('=') && mergedParts.length > 0) {
+          mergedParts[mergedParts.length - 1] += '&' + part;
+        } else {
+          mergedParts.push(part);
+        }
+      }
+      return mergedParts.map(part => {
+        const eqIndex = part.indexOf('=');
+        if (eqIndex !== -1) {
+          const key = part.slice(0, eqIndex);
+          const val = part.slice(eqIndex + 1);
+          return `${encodeURIComponent(key)}=${encodeURIComponent(val)}`;
+        }
+        return encodeURIComponent(part);
+      }).join('&');
+    })
     .join('/');
 }
 
@@ -323,7 +342,8 @@ module.exports = async function handler(req, res) {
         
         // Reconstruct URL with all extras preserved!
         const extrasString = extrasSegments.length > 0 ? `/${extrasSegments.join("/")}` : "";
-        const targetUrl = `${baseUrl}/catalog/${type}/${realId}${extrasString}.json`;
+        const rawPath = `/catalog/${type}/${realId}${extrasString}.json`;
+        const targetUrl = `${baseUrl}${encodeStremioPath(rawPath)}`;
         
         try {
           const catRes = await fetch(targetUrl, {
