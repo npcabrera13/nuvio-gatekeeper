@@ -66,6 +66,11 @@ const ALL_ADDONS = [
     name: "Open Subtitles",
     url: "https://opensubtitles-v3.strem.io/manifest.json",
     resources: ["subtitles"]
+  },
+  {
+    name: "AioMetadata",
+    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json",
+    resources: ["catalog", "meta"]
   }
 ];
 
@@ -116,7 +121,39 @@ const HARDCODED_MANIFEST = {
       genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
     { type: "anime", id: "animekitsu___kitsu-anime-rating", name: "Highest Rated Anime",
       extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
-      genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }
+      genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
+
+    // AIOMetadata / MDBList — Streaming Services
+    { type: "movie", id: "aiometadata___mdblist.88328", name: "Netflix" },
+    { type: "series", id: "aiometadata___mdblist.88329", name: "Netflix Series" },
+    { type: "movie", id: "aiometadata___mdblist.86752", name: "Latest Netflix" },
+    { type: "series", id: "aiometadata___mdblist.86751", name: "Latest Netflix Series" },
+    { type: "movie", id: "aiometadata___mdblist.88332", name: "Prime" },
+    { type: "series", id: "aiometadata___mdblist.88333", name: "Prime Series" },
+    { type: "movie", id: "aiometadata___mdblist.88322", name: "Disney+" },
+    { type: "series", id: "aiometadata___mdblist.88323", name: "Disney+ Series" },
+    { type: "movie", id: "aiometadata___mdblist.88324", name: "HBO Max" },
+    { type: "series", id: "aiometadata___mdblist.88325", name: "HBO Max Series" },
+    { type: "movie", id: "aiometadata___mdblist.88317", name: "Apple TV+" },
+    { type: "series", id: "aiometadata___mdblist.88319", name: "Apple TV+ Series" },
+    { type: "movie", id: "aiometadata___mdblist.88326", name: "Hulu" },
+    { type: "series", id: "aiometadata___mdblist.88327", name: "Hulu Series" },
+    { type: "movie", id: "aiometadata___mdblist.88330", name: "Paramount+" },
+    { type: "series", id: "aiometadata___mdblist.88331", name: "Paramount+ Series" },
+    { type: "movie", id: "aiometadata___mdblist.98862", name: "Crunchyroll" },
+    { type: "series", id: "aiometadata___mdblist.99202", name: "Crunchyroll Series" },
+    
+    // AIOMetadata / MDBList — Genres  
+    { type: "movie", id: "aiometadata___mdblist.91211", name: "Popular Action" },
+    { type: "movie", id: "aiometadata___mdblist.91223", name: "Popular Comedy" },
+    { type: "movie", id: "aiometadata___mdblist.91296", name: "Popular Drama" },
+    { type: "movie", id: "aiometadata___mdblist.91215", name: "Popular Horror" },
+    { type: "movie", id: "aiometadata___mdblist.91220", name: "Popular Sci-Fi" },
+    { type: "movie", id: "aiometadata___mdblist.91893", name: "Popular Thriller" },
+    { type: "movie", id: "aiometadata___mdblist.42822", name: "Popular Movies" },
+    { type: "series", id: "aiometadata___mdblist.42836", name: "Popular Series" },
+    { type: "movie", id: "aiometadata___mdblist.87667", name: "Trending" },
+    { type: "series", id: "aiometadata___mdblist.88434", name: "Trending Series" }
   ],
   idPrefixes: ["tt", "kitsu"],
   behaviorHints: { configurable: false }
@@ -271,10 +308,9 @@ module.exports = async function handler(req, res) {
       let realId = realIdParts.join("___");
 
       // --- BACKWARDS COMPATIBILITY MAPPING ---
-      // The Nuvio frontend has these broken IDs hardcoded on the Home Screen.
-      // We silently intercept and fix them here so the server fetches the right data.
+      // Fix typos and route mdblist.* catalogs to AIOMetadata (their real source)
       if (addonPrefix.toLowerCase() === "cinemata") addonPrefix = "cinemeta";
-      if (addonPrefix.toLowerCase() === "tomatometadata" && realId.startsWith("mdblist.")) realId = "rtfresh_movie";
+      if (realId.startsWith("mdblist.")) addonPrefix = "aiometadata";
       // ---------------------------------------
       
       // Find addon (case-insensitive, ignores spaces)
