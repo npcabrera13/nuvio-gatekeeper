@@ -82,20 +82,41 @@ const HARDCODED_MANIFEST = {
   resources: ["stream", "meta", "catalog", "subtitles"],
   types: ["movie", "series", "anime"],
   catalogs: [
-    // Cinemeta (Supports genres like Action, and years like 2024)
-    { type: "movie", id: "cinemeta___top", name: "Popular Movies" },
-    { type: "series", id: "cinemeta___top", name: "Popular Series" },
-    { type: "movie", id: "cinemeta___year", name: "New Movies" },
-    { type: "movie", id: "cinemeta___imdbRating", name: "Featured Movies" },
-    { type: "series", id: "cinemeta___imdbRating", name: "Featured Series" },
-    
+    // Cinemeta
+    { type: "movie", id: "cinemeta___top", name: "Popular Movies",
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
+    { type: "series", id: "cinemeta___top", name: "Popular Series",
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
+    { type: "movie", id: "cinemeta___imdbRating", name: "Featured Movies",
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
+    { type: "series", id: "cinemeta___imdbRating", name: "Featured Series",
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
+
     // Rotten Tomatoes (Certified Fresh)
-    { type: "movie", id: "tomatometadata___rtfresh_movie", name: "RT Certified Fresh" },
-    
-    // Anime Kitsu (Using real Kitsu catalog IDs)
-    { type: "anime", id: "animekitsu___kitsu-anime-trending", name: "Trending Anime" },
-    { type: "anime", id: "animekitsu___kitsu-anime-popular", name: "Popular Anime" },
-    { type: "anime", id: "animekitsu___kitsu-anime-airing", name: "Top Airing Anime" }
+    { type: "movie", id: "tomatometadata___rtfresh_movie", name: "RT Certified Fresh",
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] }],
+      genres: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] },
+    { type: "series", id: "tomatometadata___rtfresh_series", name: "RT Fresh TV Shows",
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] }],
+      genres: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] },
+
+    // Anime Kitsu (all 4 real Kitsu catalog IDs)
+    { type: "anime", id: "animekitsu___kitsu-anime-trending", name: "Trending Anime",
+      extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
+    { type: "anime", id: "animekitsu___kitsu-anime-popular", name: "Popular Anime",
+      extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
+    { type: "anime", id: "animekitsu___kitsu-anime-airing", name: "Top Airing Anime",
+      extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] },
+    { type: "anime", id: "animekitsu___kitsu-anime-rating", name: "Highest Rated Anime",
+      extra: [{ name: "genre", options: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }, { name: "skip" }],
+      genres: ["Action","Adventure","Comedy","Drama","Sci-Fi","Fantasy","Romance","Horror","Thriller","Supernatural","Mystery","Sports","Slice of Life","Mecha","School"] }
   ],
   idPrefixes: ["tt", "kitsu"],
   behaviorHints: { configurable: false }
@@ -253,8 +274,7 @@ module.exports = async function handler(req, res) {
       // The Nuvio frontend has these broken IDs hardcoded on the Home Screen.
       // We silently intercept and fix them here so the server fetches the right data.
       if (addonPrefix.toLowerCase() === "cinemata") addonPrefix = "cinemeta";
-      if (addonPrefix.toLowerCase() === "tomatometadata" && realId === "mdblist.88328") realId = "rtfresh_movie";
-      if (addonPrefix.toLowerCase() === "animekitsu" && realId === "kitsu-anime-rating") realId = "kitsu-anime-popular";
+      if (addonPrefix.toLowerCase() === "tomatometadata" && realId.startsWith("mdblist.")) realId = "rtfresh_movie";
       // ---------------------------------------
       
       // Find addon (case-insensitive, ignores spaces)
