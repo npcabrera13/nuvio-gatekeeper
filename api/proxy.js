@@ -246,8 +246,16 @@ module.exports = async function handler(req, res) {
     const extrasSegments = segments.slice(2); // ["genre=Action", "skip=100"]
 
     if (fullIdSegment && fullIdSegment.includes("___")) {
-      const [addonPrefix, ...realIdParts] = fullIdSegment.split("___");
-      const realId = realIdParts.join("___");
+      let [addonPrefix, ...realIdParts] = fullIdSegment.split("___");
+      let realId = realIdParts.join("___");
+
+      // --- BACKWARDS COMPATIBILITY MAPPING ---
+      // The Nuvio frontend has these broken IDs hardcoded on the Home Screen.
+      // We silently intercept and fix them here so the server fetches the right data.
+      if (addonPrefix.toLowerCase() === "cinemata") addonPrefix = "cinemeta";
+      if (addonPrefix.toLowerCase() === "tomatometadata" && realId === "mdblist.88328") realId = "rtfresh_movie";
+      if (addonPrefix.toLowerCase() === "animekitsu" && realId === "kitsu-anime-rating") realId = "kitsu-anime-popular";
+      // ---------------------------------------
       
       // Find addon (case-insensitive, ignores spaces)
       const targetAddon = ALL_ADDONS.find(a => 
