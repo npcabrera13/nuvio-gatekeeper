@@ -89,8 +89,8 @@ const HARDCODED_MANIFEST = {
     { type: "movie", id: "cinemeta___imdbRating", name: "Featured Movies" },
     { type: "series", id: "cinemeta___imdbRating", name: "Featured Series" },
     
-    // Tomatometadata / MDBList
-    { type: "movie", id: "tomatometadata___mdblist.88328", name: "MDBList Custom" },
+    // Rotten Tomatoes (Certified Fresh)
+    { type: "movie", id: "tomatometadata___rtfresh_movie", name: "RT Certified Fresh" },
     
     // Anime Kitsu (Using real Kitsu catalog IDs)
     { type: "anime", id: "animekitsu___kitsu-anime-trending", name: "Trending Anime" },
