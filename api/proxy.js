@@ -80,7 +80,7 @@ const SUPPORT_URL = "";
 // ─── Hardcoded Manifest ──────────────────────────────────────────────────────
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
-  id: "com.nuvio.bundle",
+  id: "com.nuvio.bundle.v2",
   version: "1.0.1",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
