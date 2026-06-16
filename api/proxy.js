@@ -103,10 +103,10 @@ const HARDCODED_MANIFEST = {
 
     // Rotten Tomatoes (Certified Fresh)
     { type: "movie", id: "tomatometadata___rtfresh_movie", name: "RT Certified Fresh",
-      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] }, { name: "skip" }],
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] }],
       genres: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] },
     { type: "series", id: "tomatometadata___rtfresh_series", name: "RT Fresh TV Shows",
-      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] }, { name: "skip" }],
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] }],
       genres: ["Action","Adventure","Animation","Anime","Biography","Comedy","Crime","Documentary","Drama","Fantasy","History","Horror","Kids & Family","Mystery & Thriller","Romance","Sci-Fi","War","Western"] },
 
     // Anime Kitsu (all 4 real Kitsu catalog IDs)
