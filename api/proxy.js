@@ -81,7 +81,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.0.2",
+  version: "1.0.3",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -150,6 +150,8 @@ const HARDCODED_MANIFEST = {
     { type: "movie", id: "aiometadata___mdblist.91215", name: "Popular Horror" },
     { type: "movie", id: "aiometadata___mdblist.91220", name: "Popular Sci-Fi" },
     { type: "movie", id: "aiometadata___mdblist.91893", name: "Popular Thriller" },
+    { type: "movie", id: "aiometadata___mdblist.128051", name: "Popular Documentary" },
+    { type: "movie", id: "aiometadata___mdblist.116037", name: "Popular Animation" },
     { type: "movie", id: "aiometadata___mdblist.42822", name: "Popular Movies" },
     { type: "series", id: "aiometadata___mdblist.42836", name: "Popular Series" },
     { type: "movie", id: "aiometadata___mdblist.87667", name: "Trending" },
