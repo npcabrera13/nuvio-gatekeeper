@@ -81,7 +81,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.0.1",
+  version: "1.0.2",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -89,16 +89,16 @@ const HARDCODED_MANIFEST = {
   catalogs: [
     // Cinemeta
     { type: "movie", id: "cinemeta___top", name: "Popular Movies",
-      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }, { name: "search" }],
       genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
     { type: "series", id: "cinemeta___top", name: "Popular Series",
-      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }, { name: "search" }],
       genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
     { type: "movie", id: "cinemeta___imdbRating", name: "Featured Movies",
-      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }, { name: "search" }],
       genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
     { type: "series", id: "cinemeta___imdbRating", name: "Featured Series",
-      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }],
+      extra: [{ name: "genre", options: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] }, { name: "skip" }, { name: "search" }],
       genres: ["Action","Adventure","Animation","Biography","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Mystery","Romance","Sci-Fi","Sport","Thriller","War","Western"] },
 
     // Rotten Tomatoes (Certified Fresh)
