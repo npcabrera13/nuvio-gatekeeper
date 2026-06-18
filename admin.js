@@ -34,7 +34,8 @@ const ADDONS = [
     { name: "Open Subtitles", url: "https://opensubtitles-v3.strem.io/manifest.json", canBlock: false },
     { name: "Cinemata",       url: "https://v3-cinemeta.strem.io/manifest.json", canBlock: false },
     { name: "Anime Kitsu",    url: "https://anime-kitsu.strem.fun/manifest.json", canBlock: false },
-    { name: "AioMetadata",    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json", canBlock: false }
+    { name: "AioMetadata",    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json", canBlock: false },
+    { name: "PinoyTV",        url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMGJiYmE0MDktNDUxMy00OWU3LWFmMzQtMDFjZTQzYThmNDI2In0=/manifest.json", canBlock: false }
 ];
 
 // ── DOM Refs ────────────────────────────────────────────────────────────────

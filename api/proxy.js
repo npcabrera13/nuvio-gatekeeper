@@ -71,6 +71,11 @@ const ALL_ADDONS = [
     name: "AioMetadata",
     url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json",
     resources: ["catalog", "meta"]
+  },
+  {
+    name: "PinoyTV",
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMGJiYmE0MDktNDUxMy00OWU3LWFmMzQtMDFjZTQzYThmNDI2In0=/manifest.json",
+    resources: ["catalog", "meta", "stream"]
   }
 ];
 
@@ -81,11 +86,11 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.0.3",
+  version: "1.1.0",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
-  types: ["movie", "series", "anime"],
+  types: ["movie", "series", "anime", "tv"],
   catalogs: [
     // Cinemeta
     { type: "movie", id: "cinemeta___top", name: "Popular Movies",
@@ -155,9 +160,12 @@ const HARDCODED_MANIFEST = {
     { type: "movie", id: "aiometadata___mdblist.42822", name: "Popular Movies" },
     { type: "series", id: "aiometadata___mdblist.42836", name: "Popular Series" },
     { type: "movie", id: "aiometadata___mdblist.87667", name: "Trending" },
-    { type: "series", id: "aiometadata___mdblist.88434", name: "Trending Series" }
+    { type: "series", id: "aiometadata___mdblist.88434", name: "Trending Series" },
+    
+    // PinoyTV (Live TV Channels)
+    { type: "tv", id: "pinoytv___channels", name: "🇵🇭 Philippine Live TV" }
   ],
-  idPrefixes: ["tt", "kitsu"],
+  idPrefixes: ["tt", "kitsu", "iptv_"],
   behaviorHints: { configurable: false }
 };
 
@@ -332,6 +340,9 @@ module.exports = async function handler(req, res) {
       // Fix typos and route mdblist.* catalogs to AIOMetadata (their real source)
       if (addonPrefix.toLowerCase() === "cinemata") addonPrefix = "cinemeta";
       if (realId.startsWith("mdblist.")) addonPrefix = "aiometadata";
+      if (addonPrefix.toLowerCase() === "pinoytv" && realId === "channels") {
+        realId = "iptv_channels";
+      }
       // ---------------------------------------
       
       // Find addon (case-insensitive, ignores spaces)
@@ -387,6 +398,8 @@ module.exports = async function handler(req, res) {
       targetAddon = ALL_ADDONS.find(a => a.name.toLowerCase().includes("cinemeta"));
     } else if (id && id.startsWith("kitsu:")) {
       targetAddon = ALL_ADDONS.find(a => a.name.toLowerCase().includes("kitsu"));
+    } else if (id && id.startsWith("iptv_")) {
+      targetAddon = ALL_ADDONS.find(a => a.name === "PinoyTV");
     }
 
     if (targetAddon && targetAddon.resources.includes("meta")) {
@@ -423,6 +436,29 @@ module.exports = async function handler(req, res) {
       res.setHeader("Cache-Control", "no-store, max-age=0"); 
       // Returns empty. Nuvio will just show "No streams available"
       return res.status(200).json({ streams: [] }); 
+    }
+
+    // If request is for live TV / IPTV streams
+    if (stremioPath.startsWith("stream/tv/")) {
+      const pinoyAddon = ALL_ADDONS.find(a => a.name === "PinoyTV");
+      if (pinoyAddon) {
+        const baseUrl = pinoyAddon.url.replace(/\/manifest\.json$/, "");
+        const targetStreamUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
+        try {
+          const streamRes = await fetch(targetStreamUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "application/json"
+            }
+          });
+          if (streamRes.ok) {
+            return res.status(200).json(await streamRes.json());
+          }
+        } catch (e) {
+          console.error("[Stream] PinoyTV fetch error:", e.message);
+        }
+      }
+      return res.status(200).json({ streams: [] });
     }
 
     // Fetch from Torrentio (with Chrome User-Agent to bypass Vercel IP blocks)
