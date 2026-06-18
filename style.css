@@ -370,11 +370,29 @@ body {
     align-items: center;
     gap: 1.25rem;
     transition: var(--transition);
+    cursor: pointer;
+    user-select: none;
 }
 
 .stat-card:hover {
     transform: translateY(-2px);
     background: var(--bg-card-hover);
+}
+
+.stat-card#filter-total.active-filter {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.12);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+}
+.stat-card#filter-active.active-filter {
+    border-color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.12);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+}
+.stat-card#filter-blocked.active-filter {
+    border-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.12);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
 }
 
 .stat-icon-wrapper {
@@ -859,17 +877,57 @@ tr:hover td {
         flex-direction: column;
     }
     
-    /* Make table horizontally scrollable */
+    /* Responsive stacked card table for mobile */
     .table-container {
         padding: 1rem;
     }
     .table-responsive {
         width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow-x: visible;
     }
-    table {
-        min-width: 600px;
+    table, tbody, tr, td {
+        display: block;
+        width: 100%;
+    }
+    thead {
+        display: none;
+    }
+    tr {
+        background: rgba(255, 255, 255, 0.015);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        margin-bottom: 1.25rem;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.65rem 0.25rem !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        text-align: right;
+    }
+    td:last-child {
+        border-bottom: none !important;
+        justify-content: flex-end;
+    }
+    td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        text-align: left;
+        padding-right: 1rem;
+    }
+    td.cell-customer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        text-align: left;
+    }
+    td.cell-customer::before {
+        display: none;
     }
     
     /* Full width modals */

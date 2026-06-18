@@ -524,23 +524,24 @@ async function loadData() {
 
 
             const tr = document.createElement('tr');
+            tr.dataset.status = isInactive ? 'blocked' : 'active';
             
             const safeNameHTML = String(name).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
             const safeNotesHTML = String(notes).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
             const safeNameJS = String(name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
             tr.innerHTML = `
-                <td class="cell-customer">
+                <td class="cell-customer" data-label="Customer">
                     <div>${safeNameHTML}</div>
                     ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
                 </td>
-                <td><span class="cell-token">${id}</span></td>
-                <td>
+                <td data-label="Token Key"><span class="cell-token">${id}</span></td>
+                <td data-label="Expires">
                     <div>${expiry.text}</div>
                     ${expiry.daysLabel ? `<div style="font-size:0.8rem;color:var(--text-muted);">${expiry.daysLabel}</div>` : ''}
                 </td>
-                <td>${statusBadge}</td>
-                <td>
+                <td data-label="Status">${statusBadge}</td>
+                <td data-label="Actions">
                     <div class="action-buttons">
                         <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${safeNameJS.replace(/"/g, '&quot;')}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -582,20 +583,69 @@ async function loadData() {
     }
 }
 
-// ── Roster Search ───────────────────────────────────────────────────────────
-document.getElementById('roster-search')?.addEventListener('input', function(e) {
-    const term = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#customers-tbody tr');
+// ── Roster Filtering & Search ────────────────────────────────────────────────
+let currentFilter = 'all'; // 'all', 'active', 'blocked'
+
+function applyFilters() {
+    const searchTerm = document.getElementById('roster-search')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('#customers-body tr');
+    let visibleCount = 0;
+    
     rows.forEach(row => {
-        const name = row.querySelector('.cell-customer').textContent.toLowerCase();
-        const id = row.querySelector('.cell-token').textContent.toLowerCase();
-        if (name.includes(term) || id.includes(term)) {
+        const customerCell = row.querySelector('.cell-customer');
+        const tokenCell = row.querySelector('.cell-token');
+        if (!customerCell || !tokenCell) return;
+
+        const name = customerCell.textContent.toLowerCase();
+        const id = tokenCell.textContent.toLowerCase();
+        const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
+        
+        const status = row.dataset.status; // 'active' or 'blocked'
+        let matchesFilter = true;
+        if (currentFilter === 'active' && status !== 'active') matchesFilter = false;
+        if (currentFilter === 'blocked' && status !== 'blocked') matchesFilter = false;
+        
+        if (matchesSearch && matchesFilter) {
             row.style.display = '';
+            visibleCount++;
         } else {
             row.style.display = 'none';
         }
     });
-});
+    
+    // Show/hide "No matching customers" message
+    if (visibleCount === 0 && rows.length > 0) {
+        noCustomers.querySelector('p').textContent = "No matching customers found.";
+        noCustomers.classList.remove('hidden');
+    } else if (rows.length === 0) {
+        noCustomers.querySelector('p').textContent = "No customers found. Create a token to get started!";
+        noCustomers.classList.remove('hidden');
+    } else {
+        noCustomers.classList.add('hidden');
+    }
+}
+
+// Bind search input
+document.getElementById('roster-search')?.addEventListener('input', applyFilters);
+
+// Bind clickable stats cards
+function setupStatsFilter(cardId, filterType) {
+    const cardEl = document.getElementById(cardId);
+    if (!cardEl) return;
+    cardEl.addEventListener('click', () => {
+        // Toggle active visual state
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+        cardEl.classList.add('active-filter');
+        
+        // Apply filter state
+        currentFilter = filterType;
+        applyFilters();
+    });
+}
+
+setupStatsFilter('filter-total', 'all');
+setupStatsFilter('filter-active', 'active');
+setupStatsFilter('filter-blocked', 'blocked');
 
 document.getElementById('refresh-data-btn')?.addEventListener('click', () => {
     loadData();
