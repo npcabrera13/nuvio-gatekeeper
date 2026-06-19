@@ -1,0 +1,56 @@
+#EXTM3U
+
+# --- 🇺🇸 US & GLOBAL NEWS (100% VERIFIED) ---
+#EXTINF:-1 tvg-logo="https://i.imgur.com/cbsnews.png" group-title="US News", CBS News 24/7
+https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/abcnews.png" group-title="US News", ABC News Live
+https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_4000.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/aljazeera.png" group-title="Global News", Al Jazeera English
+https://live-hls-web-aje.getaj.net/AJE/index.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/france24.png" group-title="Global News", France 24 English
+https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8
+
+
+# --- ⚽ SPORTS (100% VERIFIED) ---
+#EXTINF:-1 tvg-logo="https://i.imgur.com/foxsports.png" group-title="Sports", Fox Sports HQ
+https://foxsports-foxsports.hls.lura.net/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/cbssports.png" group-title="Sports", CBS Sports HQ
+https://cbssports-cbssports.hls.lura.net/playlist.m3u8
+
+
+# --- 🧸 KIDS & CARTOONS ---
+#EXTINF:-1 tvg-logo="https://i.imgur.com/nickpluto.png" group-title="Kids", Nick Pluto TV
+https://jmp2.uk/plu-62bdb6a83c6e37000726823b.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/babyshark.png" group-title="Kids", Baby Shark TV
+https://newidco-babysharktv-1-us.roku.wurl.tv/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/tomjerry.png" group-title="Kids", Tom and Jerry
+https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/toongoggles.png" group-title="Kids", Toon Goggles
+https://d3i6upqaqzosi1.cloudfront.net/tg/jr_us/tg_jr_us.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/lego.png" group-title="Kids", LEGO Channel
+https://dltiqboxjw21d.cloudfront.net/index.m3u8
+
+
+# --- 🎬 PREMIUM & ANIME ---
+#EXTINF:-1 tvg-logo="https://i.imgur.com/disney.png" group-title="Premium", Disney Channel
+http://151.80.18.177:86/Disney_Channel_HD/index.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/disneyxd.png" group-title="Premium", Disney XD
+http://23.237.104.106:8080/USA_DISNEY_XD/index.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/pokemon.png" group-title="Anime", Pokemon
+https://jmp2.uk/plu-6683cd71a1d7ad000866ec6a.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/crunchyroll.png" group-title="Anime", Crunchyroll
+https://jmp2.uk/plu-65652f7fc0fc88000883537a.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/aniplus.png" group-title="Anime", Aniplus Asia
+https://amg18481-amg18481c1-amgplt0352.playout.now3.amagi.tv/playlist/amg18481-amg18481c1-amgplt0352/playlist.m3u8
