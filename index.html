@@ -49,6 +49,7 @@
                 <span class="brand-text">Nuvio</span>
             </div>
             <div style="display: flex; gap: 1rem;">
+                <button id="view-addons-btn" class="btn btn-outline" style="font-size: 0.85rem; height: 34px;">👁️ View Active Addons</button>
             </div>
         </nav>
 
@@ -232,6 +233,26 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost close-modal" data-target="links-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Addons Modal -->
+    <div id="addons-modal" class="overlay hidden">
+        <div class="modal-card premium-glass" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">👁️ Active Addons</h3>
+                <button class="close-modal btn-icon" data-target="addons-modal">×</button>
+            </div>
+            <div class="modal-body" style="padding-top: 1rem;">
+                <p class="help-text" style="margin-bottom: 1.5rem;">List of Stremio/IPTV addons currently configured in the Gatekeeper proxy.</p>
+                <div id="active-addons-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <!-- Loaded dynamically -->
+                    <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading addons list...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost close-modal" data-target="addons-modal">Close</button>
             </div>
         </div>
     </div>

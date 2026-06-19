@@ -76,6 +76,21 @@ const ALL_ADDONS = [
     name: "PinoyTV",
     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json",
     resources: ["catalog", "meta", "stream"]
+  },
+  {
+    name: "GlobalKids",
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMva2lkcy5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiYmZlN2MwYWMtNjE4Yy00MWUxLTg4ZDEtM2NiM2MyZTMzMTA3In0=/manifest.json",
+    resources: ["catalog", "meta", "stream"]
+  },
+  {
+    name: "GlobalNews",
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMvbmV3cy5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiM2E3NTJlZDctZGI5Mi00YWRiLWE2ZDItNWU1NDFjZTdkNmI3In0=/manifest.json",
+    resources: ["catalog", "meta", "stream"]
+  },
+  {
+    name: "GlobalAnimation",
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMvYW5pbWF0aW9uLm0zdSIsImVuYWJsZUVwZyI6ZmFsc2UsImluc3RhbmNlSWQiOiIzMjFjNzk5Zi0wNjA3LTQ1MDEtODc5Mi0xOWQ0NzZiNTIzMmQifQ==/manifest.json",
+    resources: ["catalog", "meta", "stream"]
   }
 ];
 
@@ -86,7 +101,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.1.0",
+  version: "1.2.0",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -163,7 +178,12 @@ const HARDCODED_MANIFEST = {
     { type: "series", id: "aiometadata___mdblist.88434", name: "Trending Series" },
     
     // PinoyTV (Live TV Channels)
-    { type: "tv", id: "pinoytv___channels", name: "🇵🇭 Philippine Live TV" }
+    { type: "tv", id: "pinoytv___channels", name: "🇵🇭 Philippine Live TV" },
+    
+    // Global TV Guides
+    { type: "tv", id: "globalkids___channels", name: "🧸 Global Kids TV" },
+    { type: "tv", id: "globalnews___channels", name: "📰 Global News TV" },
+    { type: "tv", id: "globalanimation___channels", name: "🎬 Global Animation TV" }
   ],
   idPrefixes: ["tt", "kitsu", "iptv_"],
   behaviorHints: { configurable: false }
@@ -255,7 +275,7 @@ async function fetchAddonJson(addon, stremioPath) {
 }
 
 // ─── Main Handler ─────────────────────────────────────────────────────────────
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") return res.status(200).end();
 
@@ -340,7 +360,7 @@ module.exports = async function handler(req, res) {
       // Fix typos and route mdblist.* catalogs to AIOMetadata (their real source)
       if (addonPrefix.toLowerCase() === "cinemata") addonPrefix = "cinemeta";
       if (realId.startsWith("mdblist.")) addonPrefix = "aiometadata";
-      if (addonPrefix.toLowerCase() === "pinoytv" && realId === "channels") {
+      if (["pinoytv", "globalkids", "globalnews", "globalanimation"].includes(addonPrefix.toLowerCase()) && realId === "channels") {
         realId = "iptv_channels";
       }
       // ---------------------------------------
@@ -392,14 +412,50 @@ module.exports = async function handler(req, res) {
     const type = segments[1];
     const id = segments[2];
     
+    // If request is for live TV / IPTV metadata
+    if (id && id.startsWith("iptv_")) {
+      const iptvAddons = ALL_ADDONS.filter(a => a.resources.includes("meta") && a.url.includes("stiptv.ddns.me"));
+      const fetchPromises = iptvAddons.map(async (addon) => {
+        const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
+        const targetUrl = `${baseUrl}/meta/${type}/${id}.json`;
+        try {
+          const metaRes = await fetch(targetUrl, {
+            headers: { 
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+              "Accept": "application/json"
+            }
+          });
+          if (metaRes.ok) {
+            const data = await metaRes.json();
+            if (data && data.meta) {
+              return data;
+            }
+          }
+        } catch (e) {
+          console.error(`[Meta] ${addon.name} fetch error:`, e.message);
+        }
+        return null;
+      });
+
+      try {
+        const results = await Promise.all(fetchPromises);
+        const validResult = results.find(r => r && r.meta);
+        if (validResult) {
+          res.setHeader("Cache-Control", "public, max-age=86400"); // Cache meta for 24h
+          return res.status(200).json(validResult);
+        }
+      } catch (e) {
+        console.error("[Meta] IPTV parallel fetch error:", e.message);
+      }
+      return res.status(200).json({ meta: null });
+    }
+
     let targetAddon = null;
     
     if (id && id.startsWith("tt")) {
       targetAddon = ALL_ADDONS.find(a => a.name.toLowerCase().includes("cinemeta"));
     } else if (id && id.startsWith("kitsu:")) {
       targetAddon = ALL_ADDONS.find(a => a.name.toLowerCase().includes("kitsu"));
-    } else if (id && id.startsWith("iptv_")) {
-      targetAddon = ALL_ADDONS.find(a => a.name === "PinoyTV");
     }
 
     if (targetAddon && targetAddon.resources.includes("meta")) {
@@ -440,9 +496,9 @@ module.exports = async function handler(req, res) {
 
     // If request is for live TV / IPTV streams
     if (stremioPath.startsWith("stream/tv/")) {
-      const pinoyAddon = ALL_ADDONS.find(a => a.name === "PinoyTV");
-      if (pinoyAddon) {
-        const baseUrl = pinoyAddon.url.replace(/\/manifest\.json$/, "");
+      const iptvAddons = ALL_ADDONS.filter(a => a.resources.includes("stream") && a.url.includes("stiptv.ddns.me"));
+      const fetchPromises = iptvAddons.map(async (addon) => {
+        const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
         const targetStreamUrl = `${baseUrl}/${encodeStremioPath(stremioPath)}`;
         try {
           const streamRes = await fetch(targetStreamUrl, {
@@ -452,11 +508,25 @@ module.exports = async function handler(req, res) {
             }
           });
           if (streamRes.ok) {
-            return res.status(200).json(await streamRes.json());
+            const data = await streamRes.json();
+            if (data && data.streams && data.streams.length > 0) {
+              return data;
+            }
           }
         } catch (e) {
-          console.error("[Stream] PinoyTV fetch error:", e.message);
+          console.error(`[Stream] ${addon.name} fetch error:`, e.message);
         }
+        return null;
+      });
+
+      try {
+        const results = await Promise.all(fetchPromises);
+        const validResult = results.find(r => r && r.streams && r.streams.length > 0);
+        if (validResult) {
+          return res.status(200).json(validResult);
+        }
+      } catch (e) {
+        console.error("[Stream] IPTV parallel fetch error:", e.message);
       }
       return res.status(200).json({ streams: [] });
     }
@@ -501,4 +571,7 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(200).json(EMPTY_RESPONSE);
-};
+}
+
+handler.ALL_ADDONS = ALL_ADDONS;
+module.exports = handler;
