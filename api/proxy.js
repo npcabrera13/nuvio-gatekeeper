@@ -74,7 +74,7 @@ const ALL_ADDONS = [
   },
   {
     name: "PinoyTV",
-    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMGJiYmE0MDktNDUxMy00OWU3LWFmMzQtMDFjZTQzYThmNDI2In0=/manifest.json",
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json",
     resources: ["catalog", "meta", "stream"]
   }
 ];
