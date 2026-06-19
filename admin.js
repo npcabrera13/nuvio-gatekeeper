@@ -123,31 +123,74 @@ document.getElementById('view-addons-btn').addEventListener('click', async () =>
                 item.style.padding = '0.75rem 1rem';
                 item.style.borderRadius = '8px';
                 item.style.display = 'flex';
-                item.style.justifyContent = 'space-between';
-                item.style.alignItems = 'center';
+                item.style.flexDirection = 'column';
+                item.style.gap = '0.5rem';
                 item.style.border = '1px solid rgba(255, 255, 255, 0.08)';
                 
+                // Header (Name + Tags)
+                const header = document.createElement('div');
+                header.style.display = 'flex';
+                header.style.justifyContent = 'space-between';
+                header.style.alignItems = 'center';
+
                 const nameWrapper = document.createElement('div');
-                nameWrapper.style.fontWeight = '500';
+                nameWrapper.style.fontWeight = '600';
                 nameWrapper.style.color = '#f8fafc';
                 nameWrapper.textContent = addon.name;
-                item.appendChild(nameWrapper);
+                header.appendChild(nameWrapper);
 
                 const resourcesWrapper = document.createElement('div');
-                resourcesWrapper.style.fontSize = '0.75rem';
+                resourcesWrapper.style.fontSize = '0.7rem';
                 resourcesWrapper.style.color = 'var(--text-muted)';
                 resourcesWrapper.style.display = 'flex';
-                resourcesWrapper.style.gap = '0.35rem';
+                resourcesWrapper.style.gap = '0.25rem';
                 
                 addon.resources.forEach(r => {
                     const tag = document.createElement('span');
                     tag.style.background = 'rgba(255, 255, 255, 0.05)';
-                    tag.style.padding = '0.15rem 0.4rem';
+                    tag.style.padding = '0.1rem 0.35rem';
                     tag.style.borderRadius = '4px';
                     tag.textContent = r;
                     resourcesWrapper.appendChild(tag);
                 });
-                item.appendChild(resourcesWrapper);
+                header.appendChild(resourcesWrapper);
+                item.appendChild(header);
+
+                // URL section
+                const urlContainer = document.createElement('div');
+                urlContainer.style.display = 'flex';
+                urlContainer.style.gap = '0.5rem';
+                urlContainer.style.alignItems = 'center';
+                urlContainer.style.marginTop = '0.25rem';
+
+                const urlInput = document.createElement('input');
+                urlInput.type = 'text';
+                urlInput.className = 'form-input';
+                urlInput.value = addon.url || '';
+                urlInput.readOnly = true;
+                urlInput.style.flex = '1';
+                urlInput.style.fontSize = '0.75rem';
+                urlInput.style.padding = '0.35rem 0.6rem';
+                urlInput.style.height = 'auto';
+                urlContainer.appendChild(urlInput);
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'btn btn-outline btn-sm';
+                copyBtn.style.padding = '0.35rem 0.75rem';
+                copyBtn.style.fontSize = '0.75rem';
+                copyBtn.textContent = 'Copy';
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(addon.url)
+                        .then(() => showToast('🔗 Copied addon URL!'))
+                        .catch(() => {
+                            urlInput.select();
+                            document.execCommand('copy');
+                            showToast('🔗 Copied addon URL!');
+                        });
+                };
+                urlContainer.appendChild(copyBtn);
+                item.appendChild(urlContainer);
+
                 listEl.appendChild(item);
             });
         } else {

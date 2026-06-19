@@ -7,9 +7,10 @@ module.exports = async function handler(req, res) {
   
   if (req.method === "OPTIONS") return res.status(200).end();
   
-  // Return name and resources for security/privacy (hide the encrypted/raw URLs)
+  // Return name, url, and resources
   const safeAddons = proxy.ALL_ADDONS.map(a => ({
     name: a.name,
+    url: a.url,
     resources: a.resources
   }));
   
