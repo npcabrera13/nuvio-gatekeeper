@@ -1,87 +1,40 @@
 #EXTM3U
 
-# --- 🇵🇭 PHILIPPINE LOCAL (VERIFIED LOGOS + DRM DECRYPTION) ---
-#EXTINF:-1 tvg-id="TV5.ph" tvg-logo="https://static.wikia.nocookie.net/russel/images/7/7a/TV5_HD_Logo_2024.png/revision/latest/scale-to-width-down/290?cb=20240202141126" group-title="PH Local", TV5 HD
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=2615129ef2c846a9bbd43a641c7303ef:07c7f996b1734ea288641a68e1cfdc4d
-https://qp-pldt-live-grp-02-prod.akamaized.net/out/u/tv5_hd.mpd
+# --- 🇺🇸 US & GLOBAL NEWS ---
+#EXTINF:-1 tvg-logo="https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/vuphdwqrruacvgmt6fwj?ik-sanitizeSvg=true" fanart="https://www.paramountshop.com/cdn/shop/files/cbs-news-logo-adult-short-sleeve-t-shirt-308460_1445x.png?v=1718288868" group-title="US News", CBS News 24/7
+https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8
 
-#EXTINF:-1 tvg-id="GMA.ph" tvg-logo="https://static.wikia.nocookie.net/logopedia/images/7/71/GMA_Network_Logo_%282024_Station_ID_Teaser_Promo%29.png/revision/latest?cb=20240627213154" group-title="PH Local", GMA Network HD
-https://ln.run/1fZGp
+#EXTINF:-1 tvg-logo="https://payload.cargocollective.com/1/4/146919/13926257/V_BoxedBlackBorder_569.png" fanart="https://variety.com/wp-content/uploads/2014/08/abc-news-logo.jpg?w=1000&h=563&crop=1" group-title="US News", ABC News Live
+https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_4000.m3u8
 
-#EXTINF:-1 tvg-id="A2Z.ph" tvg-logo="https://static.wikia.nocookie.net/russel/images/8/85/A2Z_Channel_11_without_Channel_11_3D_Logo_2020.png/revision/latest?cb=20231101144828" group-title="PH Local", A2Z HD (Kapamilya)
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=f703e4c8ec9041eeb5028ab4248fa094:c22f2162e176eee6273a5d0b68d19530
-https://qp-pldt-live-grp-02-prod.akamaized.net/out/u/cg_a2z.mpd
-
-#EXTINF:-1 tvg-id="KapamilyaChannel.ph" tvg-logo="https://upload.wikimedia.org/wikipedia/en/thumb/7/7d/Kapamilya_Online_Live_Logo_2020.svg/1200px-Kapamilya_Online_Live_Logo_2020.svg.png" group-title="PH Local", Kapamilya Channel HD (ABS-CBN)
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=bd17afb5dc9648a39be79ee3634dd4b8:3ecf305d54a7729299b93a3d69c02ea5
-https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg01006-abs-cbn-kapcha-dash-abscbnono/index.mpd
-
-#EXTINF:-1 tvg-id="ALLTV.ph" group-title="PH Local", ALLTV HD
-http://115.146.176.131/play/5i_LtAbpY7PhHy5sbZlWo41V4XcHK5Lccd5m3a-e0MA/ts
-
-#EXTINF:-1 tvg-id="OneSports.ph" group-title="PH Sports", One Sports (PBA)
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key=53c3bf2eba574f639aa21f2d4409ff11:3de28411cf08a64ea935b9578f6d0edd
-https://qp-pldt-live-grp-07-prod.akamaized.net/out/u/cg_onesports_hd.mpd
-
-#EXTINF:-1 tvg-id="Net25.ph" tvg-logo="https://i.imgur.com/pPPubX5.png" group-title="PH Local", Net 25 HD
-https://wag.ika.lat/stream/2137749132
-
-# --- 🧸 PREMIUM KIDS & ANIME (ASTRO DASH + DRM DECRYPTION) ---
-#EXTINF:-1 tvg-id="CartoonNetwork.ph" group-title="Kids", Cartoon Network HD
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key={"keys":[{"kty":"oct","k":"icX/n45lx/6WavvS+RKOXw","kid":"GgW+v3BkCEMaOQw/n0D0EA"}],"type":"temporary"}
-http://linearjitp-playback.astro.com.my/dash-wv/linear/509/default_primary.mpd
-
-#EXTINF:-1 tvg-id="Animax.ph" tvg-logo="https://static.wikia.nocookie.net/fic5689/images/c/c7/Animax_HD_Luxemgary_2022.png/revision/latest?cb=20221202220353" group-title="Anime", Animax HD
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=org.w3.clearkey
-#KODIPROP:inputstream.adaptive.license_key={"keys":[{"kty":"oct","k":"L1oxmbJum2k66IGvf/hkzw","kid":"7fGnFd6XSGON0vrXWkGa8g"}],"type":"temporary"}
-https://tglmp01.akamaized.net/out/v1/de55fad9216e4fe7ad8d2eed456ba1ec/manifest.mpd
-
-#EXTINF:-1 tvg-id="Nickelodeon.ph" group-title="Kids", Nickelodeon HD
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key=d8520e96a1283ab6e5be538474bfa810:bda5f7bbc1e44096f779a0619fe9881f
-http://linearjitp-playback.astro.com.my/dash-wv/linear/2511/default.mpd
-
-#EXTINF:-1 tvg-id="MoonbugKids.ph" group-title="Kids", Moonbug Kids (Cocomelon)
-#KODIPROP:inputstreamaddon=inputstream.adaptive
-#KODIPROP:inputstream.adaptive.manifest_type=dash
-#KODIPROP:inputstream.adaptive.license_type=clearkey
-#KODIPROP:inputstream.adaptive.license_key=e3cb7499710786eb105fab7b52459910:8ab093adabdc343b8734b7ecf0aea11a
-http://linearjitp-playback.astro.com.my/dash-wv/linear/5067/default.mpd
-
-#EXTINF:-1 tvg-id="AniplusAsia.sg" group-title="Anime", Aniplus Asia HD
-https://ln.run/fNDoA
-
-# --- 🌍 GLOBAL NEWS ---
-#EXTINF:-1 tvg-id="AlJazeeraEnglish.qa" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Al_Jazeera_English_Logo.svg/1200px-Al_Jazeera_English_Logo.svg.png" group-title="Global News", Al Jazeera English
+#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX2eGB47dEs7OMC3x82T0vcStU2NtSJ-EG7g&s" fanart="https://www.screenly.io/assets/images/site/edge-apps/svg/al-jazeera-news-wide.svg" group-title="Global News", Al Jazeera English
 https://live-hls-web-aje.getaj.net/AJE/index.m3u8
 
-# --- 🎬 RESTORED UNDERGROUND PROXIES ---
-#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/en/thumb/3/3d/Tom_and_Jerry.svg/1200px-Tom_and_Jerry.svg.png" group-title="Kids", Tom and Jerry
+# --- 🧸 KIDS & CARTOONS ---
+#EXTINF:-1 tvg-logo="https://yt3.googleusercontent.com/yumIBPCfrCDj0yCBn3mJdVxjmhvC7q3h0H84dhj4o1nfDlLINQRSTgm2GdLAZOevAciyjKHKmg=s900-c-k-c0x00ffffff-no-rj" fanart="https://cf.thepinkfongcompany.com/cf/BABYSHARKTV_02_931dcc5528.jpg" group-title="Kids", Baby Shark TV
+https://newidco-babysharktv-1-us.roku.wurl.tv/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://m.media-amazon.com/images/M/MV5BODY2YWI1OTAtY2FhZS00MGI1LTk0YjUtYmE3MDk0OGFkMWUyXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg" fanart="https://static.wikia.nocookie.net/tomandjerry/images/6/6b/Tomandjerrytales-1-.jpg/revision/latest?cb=20231016230722" group-title="Kids", Tom and Jerry
 https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8
-#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Pok%C3%A9mon_logo.svg/1200px-Pok%C3%A9mon_logo.svg.png" group-title="Anime", Pokemon
-https://jmp2.uk/plu-6683cd71a1d7ad000866ec6a.m3u8
-#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Crunchyroll_Logo.svg/1200px-Crunchyroll_Logo.svg.png" group-title="Anime", Crunchyroll
-https://jmp2.uk/plu-65652f7fc0fc88000883537a.m3u8
-#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Disney_Channel_logo.svg/1200px-Disney_Channel_logo.svg.png" group-title="Premium", Disney Channel
+
+#EXTINF:-1 tvg-logo="https://static.wikia.nocookie.net/wikifanon/images/6/6c/Playhouse_Toon_Disney_%282002%29_logo.jpg/revision/latest/scale-to-width-down/998?cb=20230102152932" fanart="https://www.animationmagazine.net/wordpress/wp-content/uploads/toon-goggles-1.jpg" group-title="Kids", Toon Goggles
+https://d3i6upqaqzosi1.cloudfront.net/tg/jr_us/tg_jr_us.m3u8
+
+#EXTINF:-1 tvg-logo="https://static.vecteezy.com/system/resources/previews/020/190/593/non_2x/lego-logo-lego-icon-free-free-vector.jpg" fanart="https://logo.com/image-cdn/images/kts928pd/production/b583ad5a4ca87f77d9c67455a5f4b11e9a53bd17-1140x620.png?w=1920&q=72&fm=webp" group-title="Kids", LEGO Channel
+https://dltiqboxjw21d.cloudfront.net/index.m3u8
+
+# --- 🎬 PREMIUM & ANIME ---
+#EXTINF:-1 tvg-logo="https://mediaproxy.tvtropes.org/width/1200/https://static.tvtropes.org/pmwiki/pub/images/img_7445.png" fanart="https://whatsondisneyplus.com/wp-content/uploads/2019/04/5405E9A9-7AB4-4C0C-A329-3C5EFC42A1FB.jpeg" group-title="Premium", Disney Channel
 http://151.80.18.177:86/Disney_Channel_HD/index.m3u8
-#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Disney_XD_logo.svg/1200px-Disney_XD_logo.svg.png" group-title="Premium", Disney XD
+
+#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDBU_M3ZLhgWHqPVckd7fB-Tjxt0z3dQC3uw&s" fanart="https://i.ytimg.com/vi/lnmzCoR93JE/maxresdefault.jpg" group-title="Premium", Disney XD
 http://23.237.104.106:8080/USA_DISNEY_XD/index.m3u8
+
+#EXTINF:-1 tvg-logo="https://images.template.net/494381/Pokemon-Logo-Clipart-edit-online.png" fanart="https://images.nintendolife.com/da1a773277c5d/pokemon-logo.large.jpg" group-title="Anime", Pokemon
+https://jmp2.uk/plu-6683cd71a1d7ad000866ec6a.m3u8
+
+#EXTINF:-1 tvg-logo="https://static0.srcdn.com/wordpress/wp-content/uploads/2023/04/crunchyroll-poster-logo.jpg" fanart="https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto:best/f_auto/dpr_2.0/store/software/switch/70010000042000/e965921d2670a197008fe9403e50aaa0b150eabcaab4ce8b0c860d75ba4d1ee6" group-title="Anime", Crunchyroll
+https://jmp2.uk/plu-65652f7fc0fc88000883537a.m3u8
+
+#EXTINF:-1 tvg-logo="https://s3-symbol-logo.tradingview.com/aniplus--600.png" fanart="https://i0.wp.com/www.animephproject.com/wp-content/uploads/2020/12/aniplus-on-cignal-1.jpg?fit=2000%2C1125&ssl=1" group-title="Anime", Aniplus Asia
+https://amg18481-amg18481c1-amgplt0352.playout.now3.amagi.tv/playlist/amg18481-amg18481c1-amgplt0352/playlist.m3u8
