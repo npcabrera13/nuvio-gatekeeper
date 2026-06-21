@@ -74,7 +74,9 @@ const ALL_ADDONS = [
   },
   {
     name: "PinoyTV",
-    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json",
+    // ?v=20260621 added to m3uUrl inside the base64 to bust stiptv's server-side
+    // playlist cache — forces it to re-fetch master-ph-v2.m3u and return all 16 channels.
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC12Mi5tM3U/dj0yMDI2MDYyMSIsImVuYWJsZUVwZyI6ZmFsc2UsImluc3RhbmNlSWQiOiJkZWYzZjc5MC0zNWI2LTQ1YWQtYmQwMi1hYzdiNDkxNTRiYzQifQ==/manifest.json",
     resources: ["catalog", "meta", "stream"]
   },
   {
