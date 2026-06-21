@@ -10,6 +10,9 @@ https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_400
 #EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX2eGB47dEs7OMC3x82T0vcStU2NtSJ-EG7g&s" fanart="https://www.screenly.io/assets/images/site/edge-apps/svg/al-jazeera-news-wide.svg" group-title="Global News", Al Jazeera English
 https://live-hls-web-aje.getaj.net/AJE/index.m3u8
 
+#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRRwvdNLLz0mNOp23aykdTlGPyihmL9Uv7v8Q&s" fanart="https://scontent.fmnl17-8.fna.fbcdn.net/v/t39.30808-6/645633341_122256890024378056_1166776300429406761_n.jpg?stp=dst-jpg_tt6&cstp=mx2050x780&ctp=s2050x780&_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeEzsbhwyDhnaOgseehEgPtGmsPGC7MEA7Oaw8YLswQDs3Kn4I4dmYvtr_pAR8gf-TafOfLc0i59LsbqkgqpbZ8Q&_nc_ohc=pt6yV3Yx7goQ7kNvwE57RMJ&_nc_oc=AdoS_fIygIX8EZ3KxI1xMqE_TQPSMCEgFgF9QNBQk8DPsia_hmRQe9pa091k2jgAsms&_nc_zt=23&_nc_ht=scontent.fmnl17-8.fna&_nc_gid=L64X5yNkPRzKCvDZ9JR35w&_nc_ss=7b2a8&oh=00_Af9ewNR7wqG12vmrfmhTaO3sDYsIn9xAkAAILKECUB-XUg&oe=6A3D0754" group-title="PH News", Abante
+https://amg19223-amg19223c12-amgplt0352.playout.now3.amagi.tv/playlist/amg19223-amg19223c12-amgplt0352/playlist.m3u8
+
 # --- 🧸 KIDS & CARTOONS ---
 #EXTINF:-1 tvg-logo="https://yt3.googleusercontent.com/yumIBPCfrCDj0yCBn3mJdVxjmhvC7q3h0H84dhj4o1nfDlLINQRSTgm2GdLAZOevAciyjKHKmg=s900-c-k-c0x00ffffff-no-rj" fanart="https://cf.thepinkfongcompany.com/cf/BABYSHARKTV_02_931dcc5528.jpg" group-title="Kids", Baby Shark TV
 https://newidco-babysharktv-1-us.roku.wurl.tv/playlist.m3u8
@@ -38,3 +41,7 @@ https://jmp2.uk/plu-65652f7fc0fc88000883537a.m3u8
 
 #EXTINF:-1 tvg-logo="https://s3-symbol-logo.tradingview.com/aniplus--600.png" fanart="https://i0.wp.com/www.animephproject.com/wp-content/uploads/2020/12/aniplus-on-cignal-1.jpg?fit=2000%2C1125&ssl=1" group-title="Anime", Aniplus Asia
 https://amg18481-amg18481c1-amgplt0352.playout.now3.amagi.tv/playlist/amg18481-amg18481c1-amgplt0352/playlist.m3u8
+
+# --- ⚽ SPORTS ---
+#EXTINF:-1 tvg-logo="https://www.raithrovers.net/wp-content/uploads/2025/05/INFO-1-scaled.png" fanart="https://images.premiersports.com/premiersports/website/articles/HZXNd2SwgrOp0ghmoOaZZ2s9rCXWN3KCwj2TMu12.jpg" group-title="PH Sports", Premier Sports
+https://amg19223-amg19223c3-amgplt0351.playout.now3.amagi.tv/playlist/amg19223-amg19223c3-amgplt0351/playlist.m3u8
