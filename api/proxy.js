@@ -74,9 +74,11 @@ const ALL_ADDONS = [
   },
   {
     name: "PinoyTV",
-    // ?v=20260621 added to m3uUrl inside the base64 to bust stiptv's server-side
-    // playlist cache — forces it to re-fetch master-ph-v2.m3u and return all 16 channels.
-    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC12Mi5tM3U/dj0yMDI2MDYyMSIsImVuYWJsZUVwZyI6ZmFsc2UsImluc3RhbmNlSWQiOiJkZWYzZjc5MC0zNWI2LTQ1YWQtYmQwMi1hYzdiNDkxNTRiYzQifQ==/manifest.json",
+    // PinoyTV — catalog/meta/stream are served by the LOCAL M3U PARSER (see
+    // loadM3UChannels / parseM3U below), which bypasses stiptv entirely.
+    // The stiptv URL above is kept only for backwards-compat manifest requests
+    // and is no longer the source of truth for the channel list.
+    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC12Mi5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json",
     resources: ["catalog", "meta", "stream"]
   },
   {
@@ -203,6 +205,57 @@ const HARDCODED_MANIFEST = {
 const TOKEN_REGEX = /^[a-zA-Z0-9_-]{4,128}$/;
 const BUNDLE_TIMEOUT_MS = 8000;
 const EMPTY_RESPONSE = { streams: [], metas: [], catalogs: [] };
+
+// ─── Local M3U Parser ───────────────────────────────────────────────────────
+const M3U_URLS = {
+  pinoytv: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/master-ph-v2.m3u",
+  vipchannels: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/vip-cherry-pick.m3u"
+};
+
+const _m3uCache = new Map();
+const M3U_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function loadM3UChannels(playlistKey) {
+  const now = Date.now();
+  const cached = _m3uCache.get(playlistKey);
+  if (cached && now - cached.time < M3U_TTL) return cached.channels;
+
+  const url = M3U_URLS[playlistKey];
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", "Accept": "text/plain" } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const channels = parseM3U(text);
+    _m3uCache.set(playlistKey, { channels, time: now });
+    return channels;
+  } catch (e) {
+    console.error(`[M3U] Failed to load ${playlistKey}:`, e.message);
+    return cached ? cached.channels : [];
+  }
+}
+
+function parseM3U(text) {
+  const lines = text.split(/\r?\n/);
+  const channels = [];
+  let currentMeta = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("#EXTINF:")) {
+      const logoMatch = trimmed.match(/tvg-logo="([^"]*)"/i);
+      const groupMatch = trimmed.match(/group-title="([^"]*)"/i);
+      const fanartMatch = trimmed.match(/fanart="([^"]*)"/i);
+      const commaIdx = trimmed.lastIndexOf(",");
+      const name = commaIdx !== -1 ? trimmed.slice(commaIdx + 1).trim() : "Unknown";
+      currentMeta = { name, logo: logoMatch ? logoMatch[1] : "", fanart: fanartMatch ? fanartMatch[1] : "", group: groupMatch ? groupMatch[1] : "" };
+    } else if (trimmed && !trimmed.startsWith("#") && currentMeta) {
+      const slug = currentMeta.name.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+      channels.push({ id: `iptv_${slug}`, name: currentMeta.name, logo: currentMeta.logo, fanart: currentMeta.fanart, group: currentMeta.group, url: trimmed });
+      currentMeta = null;
+    }
+  }
+  return channels;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getAddonSlug(addonName) {
@@ -365,12 +418,27 @@ async function handler(req, res) {
     if (fullIdSegment && fullIdSegment.includes("___")) {
       let [addonPrefix, ...realIdParts] = fullIdSegment.split("___");
       let realId = realIdParts.join("___");
+      const addonLower = addonPrefix.toLowerCase();
+
+      // ── LOCAL M3U SHORT-CIRCUIT: pinoytv & vipchannels ─────────────────
+      if ((addonLower === "pinoytv" || addonLower === "vipchannels") && realId === "channels") {
+        const playlistKey = addonLower === "pinoytv" ? "pinoytv" : "vipchannels";
+        const channels = await loadM3UChannels(playlistKey);
+        const metas = channels.map(ch => ({
+          id: ch.id, type: "tv", name: ch.name,
+          poster: ch.logo, background: ch.fanart || ch.logo, logo: ch.logo,
+          genres: [ch.group].filter(Boolean), description: ch.group || ""
+        }));
+        res.setHeader("Cache-Control", "public, max-age=300");
+        return res.status(200).json({ metas });
+      }
+      // ───────────────────────────────────────────────────────────────
 
       // --- BACKWARDS COMPATIBILITY MAPPING ---
       // Fix typos and route mdblist.* catalogs to AIOMetadata (their real source)
-      if (addonPrefix.toLowerCase() === "cinemata") addonPrefix = "cinemeta";
+      if (addonLower === "cinemata") addonPrefix = "cinemeta";
       if (realId.startsWith("mdblist.")) addonPrefix = "aiometadata";
-      if (["pinoytv", "globalkids", "globalnews", "globalanimation", "vipchannels"].includes(addonPrefix.toLowerCase()) && realId === "channels") {
+      if (["globalkids", "globalnews", "globalanimation"].includes(addonLower) && realId === "channels") {
         realId = "iptv_channels";
       }
       // ---------------------------------------
@@ -424,6 +492,24 @@ async function handler(req, res) {
     
     // If request is for live TV / IPTV metadata
     if (id && id.startsWith("iptv_")) {
+      // ── LOCAL META SHORT-CIRCUIT: pinoytv & vipchannels ────────────────
+      for (const playlistKey of ["pinoytv", "vipchannels"]) {
+        const channels = await loadM3UChannels(playlistKey);
+        const ch = channels.find(c => c.id === id);
+        if (ch) {
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return res.status(200).json({
+            meta: {
+              id: ch.id, type: "tv", name: ch.name,
+              poster: ch.logo, background: ch.fanart || ch.logo, logo: ch.logo,
+              genres: [ch.group].filter(Boolean), description: ch.group || ""
+            }
+          });
+        }
+      }
+      // ──────────────────────────────────────────────────────────────
+
+      // Fallback: stiptv for GlobalKids / GlobalNews / GlobalAnimation
       const iptvAddons = ALL_ADDONS.filter(a => a.resources.includes("meta") && a.url.includes("stiptv.ddns.me"));
       const fetchPromises = iptvAddons.map(async (addon) => {
         const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
@@ -451,7 +537,7 @@ async function handler(req, res) {
         const results = await Promise.all(fetchPromises);
         const validResult = results.find(r => r && r.meta);
         if (validResult) {
-          res.setHeader("Cache-Control", "public, max-age=86400"); // Cache meta for 24h
+          res.setHeader("Cache-Control", "public, max-age=86400");
           return res.status(200).json(validResult);
         }
       } catch (e) {
@@ -506,6 +592,21 @@ async function handler(req, res) {
 
     // If request is for live TV / IPTV streams
     if (stremioPath.startsWith("stream/tv/")) {
+      const streamId = stremioPath.replace(/^stream\/tv\//, "").replace(/\.json$/, "");
+
+      // ── LOCAL STREAM SHORT-CIRCUIT: pinoytv & vipchannels ──────────────
+      for (const playlistKey of ["pinoytv", "vipchannels"]) {
+        const channels = await loadM3UChannels(playlistKey);
+        const ch = channels.find(c => c.id === streamId);
+        if (ch) {
+          return res.status(200).json({
+            streams: [{ url: ch.url, name: ch.name, description: ch.group || "Live TV", behaviorHints: { notWebReady: true } }]
+          });
+        }
+      }
+      // ──────────────────────────────────────────────────────────────
+
+      // Fallback: stiptv for GlobalKids / GlobalNews / GlobalAnimation
       const iptvAddons = ALL_ADDONS.filter(a => a.resources.includes("stream") && a.url.includes("stiptv.ddns.me"));
       const fetchPromises = iptvAddons.map(async (addon) => {
         const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
