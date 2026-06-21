@@ -4,13 +4,13 @@
 #EXTINF:-1 tvg-logo="https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/vuphdwqrruacvgmt6fwj?ik-sanitizeSvg=true" fanart="https://www.paramountshop.com/cdn/shop/files/cbs-news-logo-adult-short-sleeve-t-shirt-308460_1445x.png?v=1718288868" group-title="US News", CBS News 24/7
 https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8
 
-#EXTINF:-1 tvg-logo="https://payload.cargocollective.com/1/4/146919/13926257/V_BoxedBlackBorder_569.png" fanart="https://variety.com/wp-content/uploads/2014/08/abc-news-logo.jpg?w=1000&h=563&crop=1" group-title="US News", ABC News Live
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/abc-news-us.png" fanart="https://variety.com/wp-content/uploads/2014/08/abc-news-logo.jpg?w=1000&h=563&crop=1" group-title="US News", ABC News Live
 https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_4000.m3u8
 
-#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTX2eGB47dEs7OMC3x82T0vcStU2NtSJ-EG7g&s" fanart="https://www.screenly.io/assets/images/site/edge-apps/svg/al-jazeera-news-wide.svg" group-title="Global News", Al Jazeera English
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/aljazeera-uk.png" fanart="https://www.screenly.io/assets/images/site/edge-apps/svg/al-jazeera-news-wide.svg" group-title="Global News", Al Jazeera English
 https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8
 
-#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRRwvdNLLz0mNOp23aykdTlGPyihmL9Uv7v8Q&s" fanart="https://scontent.fmnl17-8.fna.fbcdn.net/v/t39.30808-6/645633341_122256890024378056_1166776300429406761_n.jpg?stp=dst-jpg_tt6&cstp=mx2050x780&ctp=s2050x780&_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeEzsbhwyDhnaOgseehEgPtGmsPGC7MEA7Oaw8YLswQDs3Kn4I4dmYvtr_pAR8gf-TafOfLc0i59LsbqkgqpbZ8Q&_nc_ohc=pt6yV3Yx7goQ7kNvwE57RMJ&_nc_oc=AdoS_fIygIX8EZ3KxI1xMqE_TQPSMCEgFgF9QNBQk8DPsia_hmRQe9pa091k2jgAsms&_nc_zt=23&_nc_ht=scontent.fmnl17-8.fna&_nc_gid=L64X5yNkPRzKCvDZ9JR35w&_nc_ss=7b2a8&oh=00_Af9ewNR7wqG12vmrfmhTaO3sDYsIn9xAkAAILKECUB-XUg&oe=6A3D0754" group-title="PH News", Abante
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Abante_masthead.svg/500px-Abante_masthead.svg.png" fanart="https://scontent.fmnl17-8.fna.fbcdn.net/v/t39.30808-6/645633341_122256890024378056_1166776300429406761_n.jpg?stp=dst-jpg_tt6&cstp=mx2050x780&ctp=s2050x780&_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeEzsbhwyDhnaOgseehEgPtGmsPGC7MEA7Oaw8YLswQDs3Kn4I4dmYvtr_pAR8gf-TafOfLc0i59LsbqkgqpbZ8Q&_nc_ohc=pt6yV3Yx7goQ7kNvwE57RMJ&_nc_oc=AdoS_fIygIX8EZ3KxI1xMqE_TQPSMCEgFgF9QNBQk8DPsia_hmRQe9pa091k2jgAsms&_nc_zt=23&_nc_ht=scontent.fmnl17-8.fna&_nc_gid=L64X5yNkPRzKCvDZ9JR35w&_nc_ss=7b2a8&oh=00_Af9ewNR7wqG12vmrfmhTaO3sDYsIn9xAkAAILKECUB-XUg&oe=6A3D0754" group-title="PH News", Abante
 https://amg19223-amg19223c12-amgplt0352.playout.now3.amagi.tv/playlist/amg19223-amg19223c12-amgplt0352/playlist.m3u8
 
 # --- 🧸 KIDS & CARTOONS ---
@@ -30,7 +30,7 @@ https://dltiqboxjw21d.cloudfront.net/index.m3u8
 #EXTINF:-1 tvg-logo="https://mediaproxy.tvtropes.org/width/1200/https://static.tvtropes.org/pmwiki/pub/images/img_7445.png" fanart="https://whatsondisneyplus.com/wp-content/uploads/2019/04/5405E9A9-7AB4-4C0C-A329-3C5EFC42A1FB.jpeg" group-title="Premium", Disney Channel
 http://151.80.18.177:86/Disney_Channel_HD/index.m3u8
 
-#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTDBU_M3ZLhgWHqPVckd7fB-Tjxt0z3dQC3uw&s" fanart="https://i.ytimg.com/vi/lnmzCoR93JE/maxresdefault.jpg" group-title="Premium", Disney XD
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/disney-xd-us.png" fanart="https://i.ytimg.com/vi/lnmzCoR93JE/maxresdefault.jpg" group-title="Premium", Disney XD
 http://23.237.104.106:8080/USA_DISNEY_XD/index.m3u8
 
 #EXTINF:-1 tvg-logo="https://images.template.net/494381/Pokemon-Logo-Clipart-edit-online.png" fanart="https://images.nintendolife.com/da1a773277c5d/pokemon-logo.large.jpg" group-title="Anime", Pokemon
@@ -39,7 +39,7 @@ https://jmp2.uk/plu-6683cd71a1d7ad000866ec6a.m3u8
 #EXTINF:-1 tvg-logo="https://static0.srcdn.com/wordpress/wp-content/uploads/2023/04/crunchyroll-poster-logo.jpg" fanart="https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto:best/f_auto/dpr_2.0/store/software/switch/70010000042000/e965921d2670a197008fe9403e50aaa0b150eabcaab4ce8b0c860d75ba4d1ee6" group-title="Anime", Crunchyroll
 https://jmp2.uk/plu-65652f7fc0fc88000883537a.m3u8
 
-#EXTINF:-1 tvg-logo="https://s3-symbol-logo.tradingview.com/aniplus--600.png" fanart="https://i0.wp.com/www.animephproject.com/wp-content/uploads/2020/12/aniplus-on-cignal-1.jpg?fit=2000%2C1125&ssl=1" group-title="Anime", Aniplus Asia
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/aniplus-ph.png" fanart="https://i0.wp.com/www.animephproject.com/wp-content/uploads/2020/12/aniplus-on-cignal-1.jpg?fit=2000%2C1125&ssl=1" group-title="Anime", Aniplus Asia
 https://amg18481-amg18481c1-amgplt0352.playout.now3.amagi.tv/playlist/amg18481-amg18481c1-amgplt0352/playlist.m3u8
 
 # --- ⚽ SPORTS ---
