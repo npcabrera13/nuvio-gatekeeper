@@ -110,7 +110,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.3.0",
+  version: "1.3.1",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -200,6 +200,35 @@ const HARDCODED_MANIFEST = {
   idPrefixes: ["tt", "kitsu", "iptv_"],
   behaviorHints: { configurable: false }
 };
+
+// ============================================================
+// HIDDEN CATALOGS — server-side hide list for the home screen.
+// Catalog definitions stay in HARDCODED_MANIFEST (never deleted);
+// entries here simply remove them from the served manifest and
+// short-circuit any /catalog/ requests that target them.
+//
+// Key format: "<catalogId>|<type>"  (case-sensitive, exact match)
+//
+// To UN-HIDE a catalog: delete its line below and redeploy.
+// To HIDE a new one:    add a line "<id>|<type>" and redeploy.
+// ============================================================
+const HIDDEN_CATALOGS = new Set([
+  "cinemeta___top|movie",                    // Popular Movies (NOT Popular Series — see note)
+  "aiometadata___mdblist.86752|movie",       // Latest Netflix
+  "aiometadata___mdblist.86751|series",      // Latest Netflix Series
+  "aiometadata___mdblist.88332|movie",       // Prime
+  "aiometadata___mdblist.88322|movie",       // Disney+
+  "aiometadata___mdblist.88324|movie",       // HBO Max
+  "aiometadata___mdblist.88317|movie",       // Apple TV+
+  "aiometadata___mdblist.98862|movie",       // Crunchyroll
+  "animekitsu___kitsu-anime-airing|anime",   // Top Airing Anime
+]);
+
+// Returns true if a catalog (by id + type) is in the hide list.
+function isCatalogHidden(id, type) {
+  if (!id || !type) return false;
+  return HIDDEN_CATALOGS.has(`${id}|${type}`);
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const TOKEN_REGEX = /^[a-zA-Z0-9_-]{4,128}$/;
@@ -356,7 +385,11 @@ async function handler(req, res) {
   if (stremioPath === "manifest.json") {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    return res.status(200).json(HARDCODED_MANIFEST);
+    const visibleCatalogs = HARDCODED_MANIFEST.catalogs.filter(
+      c => !isCatalogHidden(c.id, c.type)
+    );
+    const filteredManifest = { ...HARDCODED_MANIFEST, catalogs: visibleCatalogs };
+    return res.status(200).json(filteredManifest);
   }
 
   const addonKey = params.addon || null;
@@ -414,6 +447,13 @@ async function handler(req, res) {
     const type = segments[0]; // movie, series, anime
     const fullIdSegment = segments[1]; // cinemeta___imdbRating
     const extrasSegments = segments.slice(2); // ["genre=Action", "skip=100"]
+
+    // Hide-list short-circuit: if this catalog is in HIDDEN_CATALOGS,
+    // return an empty metas array. Handles stale clients that cached
+    // the old manifest before the hide took effect.
+    if (isCatalogHidden(fullIdSegment, type)) {
+      return res.status(200).json({ metas: [] });
+    }
 
     if (fullIdSegment && fullIdSegment.includes("___")) {
       let [addonPrefix, ...realIdParts] = fullIdSegment.split("___");
