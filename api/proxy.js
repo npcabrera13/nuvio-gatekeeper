@@ -529,7 +529,7 @@ async function handler(req, res) {
       }
       // ──────────────────────────────────────────────────────────────
 
-      // Fallback: stiptv for GlobalKids / GlobalNews / GlobalAnimation
+      // Fallback: stiptv for PinoyTV / VIPChannels (orphaned iptv_* IDs)
       const iptvAddons = ALL_ADDONS.filter(a => a.resources.includes("meta") && a.url.includes("stiptv.ddns.me"));
       const fetchPromises = iptvAddons.map(async (addon) => {
         const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
@@ -626,7 +626,7 @@ async function handler(req, res) {
       }
       // ──────────────────────────────────────────────────────────────
 
-      // Fallback: stiptv for GlobalKids / GlobalNews / GlobalAnimation
+      // Fallback: stiptv for PinoyTV / VIPChannels (orphaned iptv_* IDs)
       const iptvAddons = ALL_ADDONS.filter(a => a.resources.includes("stream") && a.url.includes("stiptv.ddns.me"));
       const fetchPromises = iptvAddons.map(async (addon) => {
         const baseUrl = addon.url.replace(/\/manifest\.json$/, "");
