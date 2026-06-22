@@ -35,10 +35,7 @@ const ADDONS = [
     { name: "Cinemata",       url: "https://v3-cinemeta.strem.io/manifest.json", canBlock: false },
     { name: "Anime Kitsu",    url: "https://anime-kitsu.strem.fun/manifest.json", canBlock: false },
     { name: "AioMetadata",    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json", canBlock: false },
-    { name: "PinoyTV",        url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json", canBlock: false },
-    { name: "GlobalKids",     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMva2lkcy5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiYmZlN2MwYWMtNjE4Yy00MWUxLTg4ZDEtM2NiM2MyZTMzMTA3In0=/manifest.json", canBlock: false },
-    { name: "GlobalNews",     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMvbmV3cy5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiM2E3NTJlZDctZGI5Mi00YWRiLWE2ZDItNWU1NDFjZTdkNmI3In0=/manifest.json", canBlock: false },
-    { name: "GlobalAnimation",url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMvYW5pbWF0aW9uLm0zdSIsImVuYWJsZUVwZyI6ZmFsc2UsImluc3RhbmNlSWQiOiIzMjFjNzk5Zi0wNjA3LTQ1MDEtODc5Mi0xOWQ0NzZiNTIzMmQifQ==/manifest.json", canBlock: false },
+    { name: "PinoyTV",        url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC12Mi5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json", canBlock: false },
     { name: "VIPChannels",     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL3ZpcC1jaGVycnktcGljay5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMzMzZjYxNjktY2FiYy00NjEyLWJkNzgtZjZiZTMyYjg1NTRiIn0=/manifest.json", canBlock: false }
 ];
 

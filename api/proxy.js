@@ -26,7 +26,8 @@ function getDb() {
 // ─── Customer Cache (30s TTL) ────────────────────────────────────────────────
 // Reduces Firestore reads: same token reused within 30s = 0 extra reads
 const _customerCache = new Map();
-const CUSTOMER_TTL = 60_000; // 1 minute
+// Customer cache — 5 min TTL (blocked customers keep stream access for up to 5 min)
+const CUSTOMER_TTL = 5 * 60_000; // 1 minute
 
 async function getCustomerData(token) {
   const now = Date.now();
@@ -82,21 +83,6 @@ const ALL_ADDONS = [
     resources: ["catalog", "meta", "stream"]
   },
   {
-    name: "GlobalKids",
-    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMva2lkcy5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiYmZlN2MwYWMtNjE4Yy00MWUxLTg4ZDEtM2NiM2MyZTMzMTA3In0=/manifest.json",
-    resources: ["catalog", "meta", "stream"]
-  },
-  {
-    name: "GlobalNews",
-    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMvbmV3cy5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiM2E3NTJlZDctZGI5Mi00YWRiLWE2ZDItNWU1NDFjZTdkNmI3In0=/manifest.json",
-    resources: ["catalog", "meta", "stream"]
-  },
-  {
-    name: "GlobalAnimation",
-    url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL2lwdHYtb3JnLmdpdGh1Yi5pby9pcHR2L2NhdGVnb3JpZXMvYW5pbWF0aW9uLm0zdSIsImVuYWJsZUVwZyI6ZmFsc2UsImluc3RhbmNlSWQiOiIzMjFjNzk5Zi0wNjA3LTQ1MDEtODc5Mi0xOWQ0NzZiNTIzMmQifQ==/manifest.json",
-    resources: ["catalog", "meta", "stream"]
-  },
-  {
     name: "VIPChannels",
     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL3ZpcC1jaGVycnktcGljay5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMzMzZjYxNjktY2FiYy00NjEyLWJkNzgtZjZiZTMyYjg1NTRiIn0=/manifest.json",
     resources: ["catalog", "meta", "stream"]
@@ -110,7 +96,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.3.1",
+  version: "1.3.2",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -190,9 +176,6 @@ const HARDCODED_MANIFEST = {
     { type: "tv", id: "pinoytv___channels", name: "🇵🇭 Philippine Live TV" },
     
     // Global TV Guides
-    { type: "tv", id: "globalkids___channels", name: "🧸 Global Kids TV" },
-    { type: "tv", id: "globalnews___channels", name: "📰 Global News TV" },
-    { type: "tv", id: "globalanimation___channels", name: "🎬 Global Animation TV" },
     
     // VIP Cherry Pick Channels
     { type: "tv", id: "vipchannels___channels", name: "⭐ VIP Cherry Pick TV" }
@@ -478,9 +461,6 @@ async function handler(req, res) {
       // Fix typos and route mdblist.* catalogs to AIOMetadata (their real source)
       if (addonLower === "cinemata") addonPrefix = "cinemeta";
       if (realId.startsWith("mdblist.")) addonPrefix = "aiometadata";
-      if (["globalkids", "globalnews", "globalanimation"].includes(addonLower) && realId === "channels") {
-        realId = "iptv_channels";
-      }
       // ---------------------------------------
       
       // Find addon (case-insensitive, ignores spaces)
