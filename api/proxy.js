@@ -96,7 +96,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.3.12",
+  version: "1.3.7",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -715,16 +715,14 @@ async function handler(req, res) {
         const data = await streamRes.json();
         // ── MASK TORRENTIO BRANDING ──────────────────────────────────
         // Replace "Torrentio" name and logo with "Nuvio Bundle" branding.
-        // Preserve quality info (e.g., "\n1080p") that Torrentio appends to the name.
-        // Keep title (file info) and description (seeders/size info) intact.
+        // Keep title (quality info) and description (seeders/size info) intact.
         if (data && Array.isArray(data.streams)) {
           const NUVIO_LOGO = "https://i.ibb.co/J91qPG0/Logo-1080x1080.png";
           data.streams = data.streams.map(stream => {
             const masked = { ...stream };
-            // Replace "Torrentio" with "Nuvio Bundle" in the name field, preserving any quality suffix
-            // Torrentio's name format is typically "Torrentio\n1080p" or "Torrentio\n4k HDR" etc.
+            // Replace "Torrentio" in the name field with "Nuvio Bundle"
             if (masked.name && /torrentio/i.test(String(masked.name))) {
-              masked.name = String(masked.name).replace(/torrentio/i, "Nuvio Bundle");
+              masked.name = "Nuvio Bundle";
             }
             // Replace the logo with the Nuvio logo (preserve other behaviorHints)
             if (masked.behaviorHints && typeof masked.behaviorHints === "object") {
