@@ -96,7 +96,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.3.6",
+  version: "1.3.7",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -473,12 +473,7 @@ async function handler(req, res) {
     const fullIdSegment = segments[1]; // cinemeta___imdbRating
     const extrasSegments = segments.slice(2); // ["genre=Action", "skip=100"]
 
-    // Hide-list short-circuit: if this catalog is in HIDDEN_CATALOGS,
-    // return an empty metas array. Handles stale clients that cached
-    // the old manifest before the hide took effect.
-    if (isCatalogHidden(fullIdSegment, type)) {
-      return res.status(200).json({ metas: [] });
-    }
+
 
     if (fullIdSegment && fullIdSegment.includes("___")) {
       let [addonPrefix, ...realIdParts] = fullIdSegment.split("___");
