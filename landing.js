@@ -209,3 +209,268 @@
     });
 
 })();
+
+
+// ===== HERO TRAILER CAROUSEL =====
+const CATALOG_URL = 'https://nuviostreamapi.vercel.app/nuvio_2xa56et/catalog/movie/cinemeta___top.json';
+const META_URL = 'https://v3-cinemeta.strem.io/meta/movie';
+const BACKDROP_URL = 'https://images.metahub.space/background/medium';
+
+let heroMovies = [];
+let currentSlide = 0;
+let trailerRotationTimer = null;
+
+// Fallback movies if API fails
+const FALLBACK_MOVIES = [
+    { title: 'Project Hail Mary', imdbId: 'tt12042730', year: '2026', rating: '8.3' },
+    { title: 'Michael', imdbId: 'tt11378946', year: '2026', rating: '7.7' },
+    { title: 'Masters of the Universe', imdbId: 'tt0427340', year: '2026', rating: 'NR' },
+    { title: 'Pressure', imdbId: 'tt32547691', year: '2026', rating: '7.7' },
+    { title: 'The Death of Robin Hood', imdbId: 'tt32273171', year: '2026', rating: '7.4' }
+];
+
+async function initHeroCarousel() {
+    const container = document.getElementById('trailerContainer');
+    const fallback = document.getElementById('trailerFallback');
+    const indicatorsWrap = document.getElementById('heroIndicators');
+    
+    if (!container) return;
+    
+    // Try to fetch real movies from Cinemeta
+    try {
+        const res = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(6000) });
+        const data = await res.json();
+        heroMovies = data.metas.slice(0, 5).map(m => ({
+            title: m.name,
+            imdbId: m.id,
+            year: m.releaseInfo || '',
+            rating: m.imdbRating || 'NR'
+        }));
+    } catch (err) {
+        console.warn('[Nuvio] Cinemeta fetch failed, using fallback:', err.message);
+        heroMovies = FALLBACK_MOVIES;
+    }
+    
+    // Build indicators
+    heroMovies.forEach((_, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'indicator' + (i === 0 ? ' active' : '');
+        btn.setAttribute('aria-label', `Show ${heroMovies[i].title}`);
+        btn.addEventListener('click', () => switchSlide(i));
+        indicatorsWrap.appendChild(btn);
+    });
+    
+    // Start with first movie
+    switchSlide(0);
+}
+
+async function switchSlide(index) {
+    const movie = heroMovies[index];
+    if (!movie) return;
+    
+    currentSlide = index;
+    
+    // Update indicators
+    document.querySelectorAll('.hero-indicators .indicator').forEach((ind, i) => {
+        ind.classList.toggle('active', i === index);
+    });
+    
+    // Update info
+    document.getElementById('trailerTitle').textContent = movie.title;
+    document.getElementById('trailerYear').textContent = movie.year;
+    document.getElementById('trailerRating').textContent = movie.rating !== 'NR' ? `★ ${movie.rating}` : '';
+    
+    // Show backdrop immediately (fallback)
+    const fallback = document.getElementById('trailerFallback');
+    fallback.innerHTML = `<img src="${BACKDROP_URL}/${movie.imdbId}/img" alt="${movie.title}">`;
+    
+    // Try to fetch trailer
+    try {
+        const res = await fetch(`${META_URL}/${movie.imdbId}.json`);
+        const data = await res.json();
+        const trailerId = data.meta?.trailer;
+        
+        if (trailerId) {
+            // Build YouTube embed URL (muted autoplay, loop)
+            const embedUrl = `https://www.youtube.com/embed/${trailerId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerId}&modestbranding=1&showinfo=0&rel=0&playsinline=1`;
+            
+            // Inject iframe
+            const container = document.getElementById('trailerContainer');
+            const existingIframe = container.querySelector('iframe');
+            if (existingIframe) {
+                existingIframe.src = embedUrl;
+            } else {
+                const iframe = document.createElement('iframe');
+                iframe.src = embedUrl;
+                iframe.allow = 'autoplay; encrypted-media';
+                iframe.allowFullscreen = true;
+                iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none;';
+                container.insertBefore(iframe, container.firstChild);
+            }
+            
+            // Hide fallback (trailer is playing)
+            fallback.style.display = 'none';
+        } else {
+            // No trailer — show backdrop only
+            const iframe = container.querySelector('iframe');
+            if (iframe) iframe.remove();
+            fallback.style.display = 'block';
+        }
+    } catch (err) {
+        console.warn('[Nuvio] Trailer fetch failed:', err.message);
+        // Show backdrop only
+        fallback.style.display = 'block';
+    }
+    
+    // Auto-rotate every 30 seconds
+    if (trailerRotationTimer) clearTimeout(trailerRotationTimer);
+    trailerRotationTimer = setTimeout(() => {
+        const next = (currentSlide + 1) % heroMovies.length;
+        switchSlide(next);
+    }, 30000);
+}
+
+// Unmute button
+document.getElementById('unmuteBtn')?.addEventListener('click', function() {
+    const iframe = document.querySelector('#trailerContainer iframe');
+    if (iframe) {
+        // Post message to YouTube iframe to unmute
+        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+        this.style.display = 'none';
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initHeroCarousel);
+
+
+// ===== NOW STREAMING — MOVIE ROW =====
+const POSTER_URL = 'https://images.metahub.space/poster/medium';
+
+async function loadTopMovies() {
+    const row = document.getElementById('movieRow');
+    if (!row) return;
+    
+    try {
+        const res = await fetch(CATALOG_URL);
+        const data = await res.json();
+        const movies = data.metas.slice(0, 20);
+        
+        row.innerHTML = '';
+        
+        movies.forEach((movie, index) => {
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            card.innerHTML = `
+                <img src="${POSTER_URL}/${movie.id}/img" alt="${movie.name}" loading="lazy">
+                <div class="movie-card-rank">${index + 1}</div>
+                <div class="movie-card-play">▶</div>
+                <div class="movie-card-overlay">
+                    <div class="movie-card-title">${movie.name}</div>
+                    <div class="movie-card-meta">
+                        <span>${movie.releaseInfo || ''}</span>
+                        ${movie.imdbRating ? `<span class="rating">★ ${movie.imdbRating}</span>` : ''}
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => openMovieModal(movie));
+            row.appendChild(card);
+        });
+    } catch (err) {
+        row.innerHTML = '<div class="movie-loading">Failed to load movies. Please refresh.</div>';
+    }
+}
+
+// ===== MOVIE MODAL =====
+async function openMovieModal(movie) {
+    const modal = document.getElementById('movieModal');
+    const body = document.getElementById('modalBody');
+    
+    body.innerHTML = '<div style="text-align:center;padding:40px;">Loading...</div>';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    try {
+        // Fetch full movie details
+        const res = await fetch(`https://v3-cinemeta.strem.io/meta/movie/${movie.id}.json`);
+        const data = await res.json();
+        const meta = data.meta || {};
+        
+        const trailerId = meta.trailer;
+        const genres = (meta.genres || []).map(g => `<span class="modal-genre">${g}</span>`).join('');
+        
+        body.innerHTML = `
+            ${trailerId ? `
+                <div class="modal-trailer-container">
+                    <iframe src="https://www.youtube.com/embed/${trailerId}?autoplay=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                </div>
+            ` : `
+                <img src="${POSTER_URL}/${movie.id}/img" alt="${movie.name}" class="modal-poster">
+            `}
+            <div class="modal-title">${meta.name || movie.name}</div>
+            <div class="modal-meta">
+                <span>${meta.releaseInfo || movie.releaseInfo || ''}</span>
+                ${meta.imdbRating ? `<span class="imdb">★ ${meta.imdbRating}</span>` : ''}
+                ${meta.runtime ? `<span>${meta.runtime}</span>` : ''}
+            </div>
+            <div class="modal-genres">${genres}</div>
+            <p class="modal-plot">${meta.description || 'No description available.'}</p>
+            <a href="/signup" class="modal-cta">Watch on Nuvio — 7 Days Free →</a>
+        `;
+    } catch (err) {
+        body.innerHTML = `
+            <img src="${POSTER_URL}/${movie.id}/img" alt="${movie.name}" class="modal-poster">
+            <div class="modal-title">${movie.name}</div>
+            <p class="modal-plot">Failed to load details. Try again.</p>
+            <a href="/signup" class="modal-cta">Watch on Nuvio — 7 Days Free →</a>
+        `;
+    }
+}
+
+// Close modal
+document.getElementById('modalClose')?.addEventListener('click', closeModal);
+document.getElementById('movieModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+function closeModal() {
+    const modal = document.getElementById('movieModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    // Stop trailer
+    const iframe = modal.querySelector('iframe');
+    if (iframe) iframe.src = '';
+}
+
+// Scroll buttons
+document.getElementById('scrollLeft')?.addEventListener('click', () => {
+    document.getElementById('movieRow').scrollBy({ left: -400, behavior: 'smooth' });
+});
+
+document.getElementById('scrollRight')?.addEventListener('click', () => {
+    document.getElementById('movieRow').scrollBy({ left: 400, behavior: 'smooth' });
+});
+
+// Load movies on page load
+document.addEventListener('DOMContentLoaded', loadTopMovies);
+
+
+// ===== APP MOCKUP — Load movie posters =====
+async function loadMockupMovies() {
+    const container = document.getElementById('mockupMovies');
+    if (!container) return;
+    
+    try {
+        const res = await fetch(CATALOG_URL);
+        const data = await res.json();
+        const movies = data.metas.slice(0, 6);
+        
+        container.innerHTML = movies.map(m => 
+            `<img src="${POSTER_URL}/${m.id}/img" alt="${m.name}" loading="lazy">`
+        ).join('');
+    } catch (err) {
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#6b6b7e;font-size:0.8rem;">Movies preview</div>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadMockupMovies);
