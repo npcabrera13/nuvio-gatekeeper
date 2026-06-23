@@ -96,7 +96,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.3.7",
+  version: "1.3.8",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -657,7 +657,7 @@ async function handler(req, res) {
         const ch = channels.find(c => c.id === streamId);
         if (ch) {
           return res.status(200).json({
-            streams: [{ url: ch.url, name: ch.name, description: ch.group || "Live TV", behaviorHints: { notWebReady: true } }]
+            streams: [{ url: ch.url, name: ch.name, description: ch.group || "Live TV", behaviorHints: { notWebReady: true, logo: "https://i.ibb.co/J91qPG0/Logo-1080x1080.png" } }]
           });
         }
       }
