@@ -96,7 +96,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.3.10",
+  version: "1.3.11",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -235,12 +235,9 @@ const HIDDEN_CATALOGS = new Set([
   // AIOMetadata — "Popular X" genre catalogs
   "aiometadata___mdblist.91211|movie",       // Popular Action
   "aiometadata___mdblist.91223|movie",       // Popular Comedy
-  "aiometadata___mdblist.91296|movie",       // Popular Drama
   "aiometadata___mdblist.91215|movie",       // Popular Horror
   "aiometadata___mdblist.91220|movie",       // Popular Sci-Fi
   "aiometadata___mdblist.91893|movie",       // Popular Thriller
-  "aiometadata___mdblist.128051|movie",      // Popular Documentary
-  "aiometadata___mdblist.116037|movie",      // Popular Animation
   "aiometadata___mdblist.42822|movie",       // Popular Movies (AIO)
   "aiometadata___mdblist.87667|movie",       // Trending
 
