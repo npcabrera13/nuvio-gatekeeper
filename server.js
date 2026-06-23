@@ -69,16 +69,19 @@ app.use(express.static(__dirname));
 
 const fs = require('fs');
 
-// Fallback for /configure path to serve the admin UI
-app.get('/configure', (req, res) => {
+// Serve the admin dashboard at both /configure (Stremio's convention) and /admin
+function serveAdmin(req, res) {
     try {
-        const filePath = path.join(__dirname, 'index.html');
+        const filePath = path.join(__dirname, 'admin.html');
         const content = fs.readFileSync(filePath, 'utf8');
         res.send(content);
     } catch (err) {
-        res.status(500).send("Error loading index.html: " + err.message);
+        res.status(500).send("Error loading admin.html: " + err.message);
     }
-});
+}
+app.get('/configure', serveAdmin);
+app.get('/admin', serveAdmin);
+app.get('/admin.html', serveAdmin);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

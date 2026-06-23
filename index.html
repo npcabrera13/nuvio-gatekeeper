@@ -3,284 +3,502 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuvio Gatekeeper Admin</title>
-    <meta name="description" content="Nuvio Gatekeeper - Premium Stremio Manager">
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Nuvio — Netflix, Prime, Disney+ & Live TV for ₱49/month</title>
+    <meta name="description" content="All your streaming in one app. Netflix, Prime Video, Disney+, Crunchyroll, and Philippine Live TV — all for just ₱49/month. 7 days free, no credit card.">
+
+    <meta property="og:title" content="Nuvio — All your streaming. One app. ₱49/month.">
+    <meta property="og:description" content="Netflix + Prime + Disney+ + Crunchyroll + Philippine Live TV. 7 days free.">
+    <meta property="og:type" content="website">
+
+    <link rel="icon" href="https://i.ibb.co/J91qPG0/Logo-1080x1080.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.metahub.space">
+    <link rel="preload" as="image" href="https://images.metahub.space/background/medium/tt12042730/img">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="landing.css">
 </head>
 <body>
 
-    <!-- Ambient Background Effects -->
-    <div class="ambient-bg">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-    </div>
-
-    <!-- Password Login Overlay -->
-    <div id="login-overlay" class="overlay active">
-        <div class="login-card premium-glass">
-            <div class="login-logo">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#38bdf8"/><stop offset="100%" style="stop-color:#818cf8"/></linearGradient></defs>
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <span class="brand-text">Nuvio Gatekeeper</span>
+    <!-- ============ NAVBAR ============ -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-brand">
+                <img src="https://i.ibb.co/J91qPG0/Logo-1080x1080.png" alt="Nuvio" class="nav-logo" width="36" height="36">
+                <span class="nav-brand-text">Nuvio</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#channels">Channels</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#reviews">Reviews</a>
+                <a href="#faq">FAQ</a>
             </div>
-            <p class="login-subtitle">Secure access to the ultimate stream router.</p>
-            <input type="password" id="password-input" class="form-input" placeholder="Admin Password" autocomplete="current-password">
-            <button id="login-btn" class="btn btn-glow btn-full">Unlock Dashboard</button>
-            <p id="login-error" class="error-text"></p>
+            <div class="nav-actions">
+                <a href="/configure" class="btn btn-secondary btn-sm">Login</a>
+                <a href="#pricing" class="btn btn-primary btn-sm">Get 7 Days Free</a>
+            </div>
+            <a href="#pricing" class="btn btn-primary btn-sm nav-cta-mobile">Get 7 Days Free</a>
         </div>
-    </div>
+    </nav>
 
-    <!-- Main Dashboard -->
-    <div id="dashboard" class="dashboard hidden">
-
-        <!-- Top Navigation -->
-        <nav class="top-nav premium-glass">
-            <div class="nav-brand">
-                <div class="logo-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                    </svg>
-                </div>
-                <span class="brand-text">Nuvio</span>
+    <!-- ============ HERO ============ -->
+    <header class="hero">
+        <div class="hero-backdrops" id="heroBackdrops"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="hero-badge animate-on-scroll">
+                <span class="pulse-dot"></span>
+                7 Days Free — No Credit Card Required
             </div>
-            <div style="display: flex; gap: 1rem;">
-                <button id="view-addons-btn" class="btn btn-outline" style="font-size: 0.85rem; height: 34px;">👁️ View Active Addons</button>
+            <h1 class="hero-title animate-on-scroll">
+                All your streaming.<br>
+                <span class="gradient-text">One app. ₱49/month.</span>
+            </h1>
+            <div class="hero-pricing animate-on-scroll">
+                <span class="pricing-pill">₱49<span class="pricing-pill-unit">/month</span></span>
+                <p class="pricing-sub">₱1.63 per day — less than your coffee</p>
             </div>
-        </nav>
-
-        <!-- Stats Row -->
-        <div class="stats-row">
-            <div class="stat-card premium-glass active-filter" id="filter-total">
-                <div class="stat-icon-wrapper blue-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">Total Tokens</span>
-                    <span class="stat-value" id="total-users">0</span>
-                </div>
-            </div>
-            <div class="stat-card premium-glass" id="filter-active">
-                <div class="stat-icon-wrapper green-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">Active</span>
-                    <span class="stat-value text-green" id="active-users">0</span>
-                </div>
-            </div>
-            <div class="stat-card premium-glass" id="filter-blocked">
-                <div class="stat-icon-wrapper red-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">Blocked</span>
-                    <span class="stat-value text-red" id="blocked-users">0</span>
-                </div>
+            <div class="hero-ctas animate-on-scroll">
+                <a href="#pricing" class="btn btn-primary btn-lg">Get 7 Days Free →</a>
+                <a href="#pricing" class="btn btn-secondary btn-lg">See Pricing</a>
             </div>
         </div>
+        <div class="hero-indicators" id="heroIndicators"></div>
+    </header>
 
-        <!-- Customer Table -->
-        <div class="table-container premium-glass">
-            <div class="table-header">
-                <div class="roster-header">
-                    <h2>Customer Roster</h2>
-                    <div class="roster-actions">
-                        <div class="input-group" style="margin-right: 1rem; display: inline-flex;">
-                            <span class="input-icon"><i class="fas fa-search"></i></span>
-                            <input type="text" id="roster-search" class="form-input" placeholder="Search tokens or names..." style="width: 250px; padding-left: 2.2rem; height: 34px; font-size: 0.85rem;">
+    <!-- ============ BRAND COMPARISON ============ -->
+    <section class="brand-comparison">
+        <p class="comparison-label">What you pay now</p>
+        <div class="comparison-brands">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Logonfx.svg/512px-Logonfx.svg.png" alt="Netflix" class="brand-logo" loading="lazy">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Prime_Video_logo_%282021%29.svg/512px-Prime_Video_logo_%282021%29.svg.png" alt="Prime Video" class="brand-logo" loading="lazy">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/512px-Disney%2B_logo.svg.png" alt="Disney+" class="brand-logo" loading="lazy">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Crunchyroll_Logo_2022.svg/512px-Crunchyroll_Logo_2022.svg.png" alt="Crunchyroll" class="brand-logo" loading="lazy">
+        </div>
+        <p class="comparison-total">₱656/month</p>
+        <div class="comparison-arrow animate-on-scroll">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+        </div>
+        <img src="https://i.ibb.co/J91qPG0/Logo-1080x1080.png" alt="Nuvio" class="nuvio-logo-glow animate-on-scroll" width="80" height="80" loading="lazy">
+        <p class="comparison-price gradient-text animate-on-scroll">₱49/month</p>
+        <span class="save-badge animate-on-scroll">Save 92%</span>
+    </section>
+
+    <!-- ============ TOP MOVIES ============ -->
+    <section class="top-movies" id="movies">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">Trending Now</p>
+                <h2 class="section-title">Top Movies Right Now</h2>
+                <p class="section-subtitle">Updated automatically from Cinemeta</p>
+            </div>
+            <div class="movie-row-wrapper">
+                <button class="scroll-arrow scroll-left" id="scrollLeft" aria-label="Scroll left">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="movie-row" id="movieRow"></div>
+                <button class="scroll-arrow scroll-right" id="scrollRight" aria-label="Scroll right">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ CHANNELS ============ -->
+    <section class="channels" id="channels">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">27 Live Channels</p>
+                <h2 class="section-title">Your favorite channels. No cable.</h2>
+                <p class="section-subtitle">From Philippine local TV to international news — all included.</p>
+            </div>
+
+            <div class="channel-group animate-on-scroll">
+                <h3 class="channel-group-title">Philippine Local</h3>
+                <div class="channel-grid">
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/gma-ph.png" alt="GMA Network HD" loading="lazy"><span class="channel-name">GMA Network HD</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/a2z-ph.png" alt="A2Z HD" loading="lazy"><span class="channel-name">A2Z HD</span></div>
+                    <div class="channel-card"><img src="https://i.imgur.com/bmd4D8Z.jpeg" alt="ALLTV HD" loading="lazy"><span class="channel-name">ALLTV HD</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/ptv-ph.png" alt="PTV 4 HD" loading="lazy"><span class="channel-name">PTV 4 HD</span></div>
+                    <div class="channel-card"><img src="https://i.imgur.com/k4X7If1.jpeg" alt="Bilyonario News" loading="lazy"><span class="channel-name">Bilyonario News</span></div>
+                    <div class="channel-card"><img src="https://m.media-amazon.com/images/I/31wgHL2U4fL.png" alt="CGTN News" loading="lazy"><span class="channel-name">CGTN News</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/jeepney-tv-ph.png" alt="Jeepney TV" loading="lazy"><span class="channel-name">Jeepney TV</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/tmc-ph.png" alt="Tagalized Movie Channel" loading="lazy"><span class="channel-name">Tagalized Movie</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/tv-maria-ph.png" alt="TV Maria" loading="lazy"><span class="channel-name">TV Maria</span></div>
+                    <div class="channel-card"><img src="https://i.imgur.com/Rhrf4nj.jpeg" alt="INC TV HD" loading="lazy"><span class="channel-name">INC TV HD</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/cltc-ph.png" alt="CLTC 36" loading="lazy"><span class="channel-name">CLTC 36</span></div>
+                    <div class="channel-card"><img src="https://i.imgur.com/G7lONcu.png" alt="Vegas Life TV" loading="lazy"><span class="channel-name">Vegas Life TV</span></div>
+                    <div class="channel-card"><img src="https://ml02dtnc01wc.i.optimole.com/w:512/h:512/q:mauto/https://mindanownetwork.com/wp-content/uploads/2024/11/Mindanow-Network-Logo-Vertical.png" alt="Mindanow Network TV" loading="lazy"><span class="channel-name">Mindanow Network TV</span></div>
+                </div>
+            </div>
+
+            <div class="channel-group animate-on-scroll">
+                <h3 class="channel-group-title">VIP &amp; International</h3>
+                <div class="channel-grid">
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/cbs-news-us.png" alt="CBS News 24/7" loading="lazy"><span class="channel-name">CBS News 24/7</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/abc-news-us.png" alt="ABC News Live" loading="lazy"><span class="channel-name">ABC News Live</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/aljazeera-uk.png" alt="Al Jazeera English" loading="lazy"><span class="channel-name">Al Jazeera English</span></div>
+                    <div class="channel-card"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Abante_masthead.svg/500px-Abante_masthead.svg.png" alt="Abante" loading="lazy"><span class="channel-name">Abante</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/baby-shark-us.png" alt="Baby Shark TV" loading="lazy"><span class="channel-name">Baby Shark TV</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/tom-and-jerry-us.png" alt="Tom and Jerry" loading="lazy"><span class="channel-name">Tom and Jerry</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/toon-goggles-us.png" alt="Toon Goggles" loading="lazy"><span class="channel-name">Toon Goggles</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/lego-us.png" alt="LEGO Channel" loading="lazy"><span class="channel-name">LEGO Channel</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/disney-channel-us.png" alt="Disney Channel" loading="lazy"><span class="channel-name">Disney Channel</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/disney-xd-us.png" alt="Disney XD" loading="lazy"><span class="channel-name">Disney XD</span></div>
+                    <div class="channel-card"><img src="https://images.template.net/494381/Pokemon-Logo-Clipart-edit-online.png" alt="Pokemon" loading="lazy"><span class="channel-name">Pokemon</span></div>
+                    <div class="channel-card"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Crunchyroll_Logo_2022.svg/512px-Crunchyroll_Logo_2022.svg.png" alt="Crunchyroll" loading="lazy"><span class="channel-name">Crunchyroll</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/aniplus-ph.png" alt="Aniplus Asia" loading="lazy"><span class="channel-name">Aniplus Asia</span></div>
+                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/premier-sports-uk.png" alt="Premier Sports" loading="lazy"><span class="channel-name">Premier Sports</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">Everything Included</p>
+                <h2 class="section-title">One subscription. Endless content.</h2>
+                <p class="section-subtitle">No more juggling 4 different subscriptions.</p>
+            </div>
+            <div class="features-grid">
+                <article class="feature-card animate-on-scroll">
+                    <div class="feature-visual">
+                        <img src="https://images.metahub.space/poster/medium/tt12042730/img" alt="" loading="lazy">
+                        <img src="https://images.metahub.space/poster/medium/tt11378946/img" alt="" loading="lazy">
+                        <img src="https://images.metahub.space/poster/medium/tt0427340/img" alt="" loading="lazy">
+                        <img src="https://images.metahub.space/poster/medium/tt32547691/img" alt="" loading="lazy">
+                    </div>
+                    <div class="feature-body">
+                        <h3 class="feature-title">Movies &amp; Series</h3>
+                        <p class="feature-desc">Blockbusters from Netflix, Prime, Disney+, HBO Max, and more — in HD and 4K.</p>
+                    </div>
+                </article>
+                <article class="feature-card animate-on-scroll">
+                    <div class="feature-visual channel-collage">
+                        <img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/gma-ph.png" alt="" loading="lazy">
+                        <img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/a2z-ph.png" alt="" loading="lazy">
+                        <img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/ptv-ph.png" alt="" loading="lazy">
+                        <img src="https://m.media-amazon.com/images/I/31wgHL2U4fL.png" alt="" loading="lazy">
+                    </div>
+                    <div class="feature-body">
+                        <h3 class="feature-title">Philippine Live TV</h3>
+                        <p class="feature-desc">GMA, A2Z, PTV, INC TV, and more — live, 24/7, no cable needed.</p>
+                    </div>
+                </article>
+                <article class="feature-card animate-on-scroll">
+                    <div class="feature-visual anime-bg">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Crunchyroll_Logo_2022.svg/512px-Crunchyroll_Logo_2022.svg.png" alt="Crunchyroll" loading="lazy">
+                    </div>
+                    <div class="feature-body">
+                        <h3 class="feature-title">Anime Library</h3>
+                        <p class="feature-desc">Crunchyroll + top airing anime. Subbed and dubbed, in HD.</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">Get Started in 5 Minutes</p>
+                <h2 class="section-title">How Nuvio works</h2>
+                <p class="section-subtitle">Pay, get your link, install in Stremio, watch. That simple.</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card animate-on-scroll">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Choose your plan</h3>
+                    <p class="step-desc">Pick 30, 60, or 90 days. Pay securely via GCash or Maya — instant activation.</p>
+                    <div class="step-payment">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/GCash_logo.svg/256px-GCash_logo.svg.png" alt="GCash" loading="lazy">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Maya_logo.svg/256px-Maya_logo.svg.png" alt="Maya" loading="lazy">
+                    </div>
+                </div>
+                <div class="step-arrow animate-on-scroll">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+                <div class="step-card animate-on-scroll">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Get your link instantly</h3>
+                    <p class="step-desc">Right after payment, you get a unique addon URL for your account. No waiting.</p>
+                </div>
+                <div class="step-arrow animate-on-scroll">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+                <div class="step-card animate-on-scroll">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Install in Stremio &amp; watch</h3>
+                    <p class="step-desc">Add your link to the free Stremio app (Android TV, iOS, PC, Smart TV). 5-minute setup.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ PRICING ============ -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">Simple Pricing</p>
+                <h2 class="section-title">Less than ₱2 a day.</h2>
+                <p class="section-subtitle">No contracts. No hidden fees. Cancel anytime.</p>
+            </div>
+            <div class="pricing-grid">
+                <article class="pricing-card animate-on-scroll">
+                    <p class="pricing-duration">30 Days</p>
+                    <p class="pricing-amount"><span class="peso">₱</span>49</p>
+                    <p class="pricing-period">one-time payment</p>
+                    <span class="per-day-badge">₱1.63 per day</span>
+                    <a href="#" class="btn btn-secondary btn-block">Get Started</a>
+                </article>
+                <article class="pricing-card featured animate-on-scroll">
+                    <span class="best-value-badge">BEST VALUE</span>
+                    <p class="pricing-duration">90 Days</p>
+                    <p class="pricing-amount"><span class="peso">₱</span>129</p>
+                    <p class="pricing-period">one-time payment</p>
+                    <span class="per-day-badge">₱1.43 per day — Save 12%</span>
+                    <a href="#" class="btn btn-primary btn-block">Get Best Value</a>
+                </article>
+                <article class="pricing-card animate-on-scroll">
+                    <p class="pricing-duration">60 Days</p>
+                    <p class="pricing-amount"><span class="peso">₱</span>89</p>
+                    <p class="pricing-period">one-time payment</p>
+                    <span class="per-day-badge">₱1.48 per day — Save 9%</span>
+                    <a href="#" class="btn btn-secondary btn-block">Choose 60 Days</a>
+                </article>
+            </div>
+            <div class="payment-methods animate-on-scroll">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/GCash_logo.svg/256px-GCash_logo.svg.png" alt="GCash" loading="lazy">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Maya_logo.svg/256px-Maya_logo.svg.png" alt="Maya" loading="lazy">
+                <span class="paymongo-text">Powered by PayMongo</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ REVIEWS ============ -->
+    <section class="reviews" id="reviews">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">Customer Reviews</p>
+                <h2 class="section-title">Loved by Filipinos nationwide.</h2>
+            </div>
+            <div class="reviews-grid">
+                <article class="review-card animate-on-scroll">
+                    <div class="stars">★★★★★</div>
+                    <p class="review-text">"Sulit na sulit! Netflix + Prime + Live TV for ₱49. Di na ako nag-renew ng Netflix ko."</p>
+                    <div class="review-author">
+                        <div class="avatar">M</div>
+                        <div class="author-info">
+                            <p class="author-name">Maria S.</p>
+                            <p class="author-location">Manila</p>
                         </div>
-                        <button id="refresh-data-btn" class="btn btn-outline" style="margin-right: 1rem;" data-tip="Refresh Data">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                        </button>
-                        <button id="open-create-modal" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Create Token
-                        </button>
+                        <span class="verified">✓ Verified Customer</span>
                     </div>
-                </div>
-            </div>
-            <div id="loading-spinner" class="spinner"></div>
-            <div class="table-responsive">
-                <table id="customers-table">
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Token Key</th>
-                            <th>Expires</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customers-body"></tbody>
-                </table>
-                <div id="no-customers" class="hidden no-data">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5; margin-bottom: 1rem;"><circle cx="12" cy="12" r="10"></circle><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
-                    <p>No customers found. Create a token to get started!</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create/Edit Modal -->
-    <div id="token-modal" class="overlay hidden">
-        <div class="modal-card premium-glass">
-            <div class="modal-header">
-                <h3 id="modal-title">Create New Token</h3>
-                <button class="btn-icon close-modal" data-target="token-modal">×</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="edit-token-id">
-                
-                <div class="form-group">
-                    <label>Customer Name</label>
-                    <input type="text" id="modal-name" class="form-input" placeholder="e.g. John Doe">
-                </div>
-
-                <div class="form-group">
-                    <label>Notes (Email, Info, etc.)</label>
-                    <textarea id="modal-notes" class="form-input" placeholder="e.g. user@example.com" rows="2" style="resize: vertical;"></textarea>
-                </div>
-
-                <div class="form-group hidden" id="token-key-group">
-                    <label>Token ID (API Key)</label>
-                    <input type="text" id="modal-token-key" class="form-input" placeholder="e.g. nuvio_abc123xyz">
-                </div>
-                
-                <div class="form-group" id="days-group">
-                    <label>Duration (Days)</label>
-                    <input type="number" id="modal-days" class="form-input" placeholder="30" value="30" min="1">
-                </div>
-
-
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost close-modal" data-target="token-modal">Cancel</button>
-                <button id="save-token-btn" class="btn btn-glow">Generate Token</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Renew Modal -->
-    <div id="renew-modal" class="overlay hidden">
-        <div class="modal-card premium-glass">
-            <div class="modal-header">
-                <h3>Renew Token</h3>
-                <button class="btn-icon close-modal" data-target="renew-modal">×</button>
-            </div>
-            <div class="modal-body">
-                <p>How many days to add to <strong id="renew-customer-name"></strong>?</p>
-                <input type="number" id="renew-days" class="form-input" value="30" min="1" style="width: 100%;">
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost close-modal" data-target="renew-modal">Cancel</button>
-                <button id="confirm-renew-btn" class="btn btn-glow">Confirm Renewal</button>
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- Links Copy Modal -->
-    <div id="links-modal" class="overlay hidden">
-        <div class="modal-card premium-glass">
-            <div class="modal-header">
-                <h3>Copy Addon Links</h3>
-                <button class="btn-icon close-modal" data-target="links-modal">×</button>
-            </div>
-            <div class="modal-body">
-                <p class="modal-subtitle">Customer: <strong id="links-customer-name"></strong></p>
-                <div class="form-divider" style="margin: 0.75rem 0 1.25rem 0;"></div>
-                
-                <!-- All-in-One Section -->
-                <div class="link-section">
-                    <h4 class="link-section-title">🎯 All-in-One Master Bundle</h4>
-                    <p class="help-text">Merges all configured addons into a single Stremio install link.</p>
-                    <div class="copy-input-group">
-                        <input type="text" id="master-link-input" class="form-input link-preview-input" readonly>
-                        <button class="btn btn-outline btn-sm test-btn-action" data-input-id="master-link-input" title="Run Diagnostics">Test</button>
-                        <button class="btn btn-glow btn-sm copy-btn-action" data-input-id="master-link-input">Copy</button>
+                </article>
+                <article class="review-card animate-on-scroll">
+                    <div class="stars">★★★★★</div>
+                    <p class="review-text">"Perfect for my family. Kids watch Disney and Pokemon, I watch news. All in one app."</p>
+                    <div class="review-author">
+                        <div class="avatar">J</div>
+                        <div class="author-info">
+                            <p class="author-name">Juan D.</p>
+                            <p class="author-location">Cebu City</p>
+                        </div>
+                        <span class="verified">✓ Verified Customer</span>
                     </div>
-                </div>
+                </article>
+                <article class="review-card animate-on-scroll">
+                    <div class="stars">★★★★★</div>
+                    <p class="review-text">"I was paying ₱600+ for Netflix and Prime. Now I pay ₱49 and get MORE content."</p>
+                    <div class="review-author">
+                        <div class="avatar">A</div>
+                        <div class="author-info">
+                            <p class="author-name">Andrea P.</p>
+                            <p class="author-location">Davao</p>
+                        </div>
+                        <span class="verified">✓ Verified Customer</span>
+                    </div>
+                </article>
+                <article class="review-card animate-on-scroll">
+                    <div class="stars">★★★★★</div>
+                    <p class="review-text">"Setup was easy — 5 minutes and I was watching. GMA, A2Z, everything works."</p>
+                    <div class="review-author">
+                        <div class="avatar">R</div>
+                        <div class="author-info">
+                            <p class="author-name">Roberto G.</p>
+                            <p class="author-location">Quezon City</p>
+                        </div>
+                        <span class="verified">✓ Verified Customer</span>
+                    </div>
+                </article>
+                <article class="review-card animate-on-scroll">
+                    <div class="stars">★★★★★</div>
+                    <p class="review-text">"The anime selection is insane. Crunchyroll + more. Heaven for ₱49."</p>
+                    <div class="review-author">
+                        <div class="avatar">K</div>
+                        <div class="author-info">
+                            <p class="author-name">Kevin T.</p>
+                            <p class="author-location">Makati</p>
+                        </div>
+                        <span class="verified">✓ Verified Customer</span>
+                    </div>
+                </article>
+                <article class="review-card animate-on-scroll">
+                    <div class="stars">★★★★★</div>
+                    <p class="review-text">"No cable needed! All PH channels plus international news. Perfect."</p>
+                    <div class="review-author">
+                        <div class="avatar">L</div>
+                        <div class="author-info">
+                            <p class="author-name">Liza M.</p>
+                            <p class="author-location">Iloilo</p>
+                        </div>
+                        <span class="verified">✓ Verified Customer</span>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
 
-                <!-- Toggle Button for Individual Links -->
-                <div style="text-align: center; margin-top: 1rem;">
-                    <button id="toggle-individual-links" class="btn btn-ghost btn-sm">
-                        Show Advanced Individual Links
+    <!-- ============ FAQ ============ -->
+    <section class="faq" id="faq">
+        <div class="container container-narrow">
+            <div class="section-header animate-on-scroll">
+                <p class="section-label">Questions?</p>
+                <h2 class="section-title">Frequently asked questions.</h2>
+            </div>
+            <div class="faq-list">
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        How does Nuvio work?
+                        <span class="faq-icon" aria-hidden="true">+</span>
                     </button>
+                    <div class="faq-answer"><p>Nuvio is Stremio-based. Get your addon URL after payment, install it in the free Stremio app, and start watching. Setup takes about 5 minutes.</p></div>
                 </div>
-
-                <!-- One-by-One Section (Hidden by Default) -->
-                <div id="individual-links-wrapper" class="link-section hidden" style="margin-top: 1rem;">
-                    <h4 class="link-section-title">⚡ Individual Addon Links (One-by-One)</h4>
-                    <p class="help-text">Directly route specific addons for this customer's token.</p>
-                    <div id="individual-links-container" class="individual-links-container">
-                        <!-- Individual links dynamic items -->
-                    </div>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        What devices are supported?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>Android TV, Android, iOS, Windows, Mac, and Linux. Any Smart TV running Android TV is supported.</p></div>
                 </div>
-
-                <!-- Diagnostic Console -->
-                <div id="diagnostic-console-container" class="diagnostic-container hidden">
-                    <div class="diagnostic-header">
-                        <span>Terminal Output</span>
-                        <button id="clear-diagnostics" class="btn-icon btn-sm">×</button>
-                    </div>
-                    <div id="diagnostic-console" class="diagnostic-console"></div>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        Is the 7-day free trial really free?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>Yes. Full access, no credit card required. After 7 days, the account simply stops — no auto-charges.</p></div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost close-modal" data-target="links-modal">Close</button>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        How do I pay?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>PayMongo handles payments. GCash, Maya, and credit/debit cards all work. Activation is instant after payment.</p></div>
+                </div>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        Can I cancel anytime?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>There's nothing to cancel — no auto-renew. You pay for 30, 60, or 90 days, and access expires when that period ends. Simple.</p></div>
+                </div>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        What internet speed do I need?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>HD: 5 Mbps minimum, 10 Mbps recommended. 4K: 25 Mbps or higher.</p></div>
+                </div>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        Is this legal?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>Nuvio aggregates publicly available streams. We don't host content. A VPN is recommended for privacy.</p></div>
+                </div>
+                <div class="faq-item animate-on-scroll">
+                    <button class="faq-question" aria-expanded="false">
+                        What if I need help?
+                        <span class="faq-icon" aria-hidden="true">+</span>
+                    </button>
+                    <div class="faq-answer"><p>Message us on Messenger (bottom-right widget), our Facebook page, or check our YouTube tutorials. We respond fast.</p></div>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Active Addons Modal -->
-    <div id="addons-modal" class="overlay hidden">
-        <div class="modal-card premium-glass" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3 class="modal-title">👁️ Active Addons</h3>
-                <button class="close-modal btn-icon" data-target="addons-modal">×</button>
+    <!-- ============ FINAL CTA ============ -->
+    <section class="final-cta">
+        <div class="container">
+            <div class="cta-content animate-on-scroll">
+                <h2 class="cta-title">Ready to start watching?</h2>
+                <p class="cta-subtitle">Join thousands of Filipinos saving money on streaming. 7 days free, then just ₱49/month.</p>
+                <a href="#pricing" class="btn btn-primary btn-lg">Get 7 Days Free →</a>
+                <p class="cta-fine-print">No credit card needed · Cancel anytime · Setup in 5 minutes</p>
             </div>
-            <div class="modal-body" style="padding-top: 1rem;">
-                <p class="help-text" style="margin-bottom: 1.5rem;">List of Stremio/IPTV addons currently configured in the Gatekeeper proxy.</p>
-                <div id="active-addons-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <!-- Loaded dynamically -->
-                    <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading addons list...</div>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col footer-brand">
+                    <a href="#" class="footer-logo">
+                        <img src="https://i.ibb.co/J91qPG0/Logo-1080x1080.png" alt="Nuvio" width="40" height="40" loading="lazy">
+                        <span>Nuvio</span>
+                    </a>
+                    <p class="footer-desc">All your streaming in one place. Netflix, Prime, Disney+, Crunchyroll, and Philippine Live TV — for just ₱49/month.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#channels">Channels</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#pricing">Sign Up</a>
+                    <a href="/configure">Login</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="#faq">FAQ</a>
+                    <a href="https://m.me/your-facebook-page" target="_blank" rel="noopener">Messenger Support</a>
+                    <a href="#" target="_blank" rel="noopener">Facebook Page</a>
+                    <a href="#" target="_blank" rel="noopener">YouTube Tutorials</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Refund Policy</a>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost close-modal" data-target="addons-modal">Close</button>
+            <div class="footer-bottom">
+                <p>© 2026 Nuvio. All rights reserved. Made in the Philippines.</p>
+                <div class="footer-social">
+                    <a href="#" class="social-icon" aria-label="Facebook" target="_blank" rel="noopener">f</a>
+                    <a href="https://m.me/your-facebook-page" class="social-icon" aria-label="Messenger" target="_blank" rel="noopener">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.6 7.1V22l3.3-1.8c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1.1 12.4l-2.5-2.7-4.9 2.7 5.4-5.7 2.6 2.7 4.8-2.7-5.4 5.7z"/></svg>
+                    </a>
+                    <a href="#" class="social-icon" aria-label="YouTube" target="_blank" rel="noopener">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.5-.4-5.2c-.2-.9-.9-1.6-1.8-1.9C19.2 4.5 12 4.5 12 4.5s-7.2 0-8.8.4c-.9.3-1.6 1-1.8 1.9C1 8.5 1 12 1 12s0 3.5.4 5.2c.2.9.9 1.6 1.8 1.9 1.6.4 8.8.4 8.8.4s7.2 0 8.8-.4c.9-.3 1.6-1 1.8-1.9.4-1.7.4-5.2.4-5.2zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg>
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
+    </footer>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
+    <!-- ============ MESSENGER WIDGET ============ -->
+    <a href="https://m.me/your-facebook-page" class="messenger-widget" target="_blank" rel="noopener" aria-label="Chat on Messenger">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.1 2 11.2c0 2.9 1.4 5.4 3.6 7.1V22l3.3-1.8c.9.3 1.9.4 2.9.4 5.5 0 10-4.1 10-9.2S17.5 2 12 2zm1.1 12.4l-2.5-2.7-4.9 2.7 5.4-5.7 2.6 2.7 4.8-2.7-5.4 5.7z"/></svg>
+    </a>
 
-    <!-- Addon Template (Hidden) -->
-    <template id="addon-template">
-        <div class="addon-item">
-            <div class="addon-inputs">
-                <input type="text" class="form-input addon-name" placeholder="Name (e.g. Torrentio)">
-                <input type="url" class="form-input addon-url" placeholder="https://.../manifest.json">
-            </div>
-            <div class="addon-actions">
-                <button class="btn-icon move-up" title="Move Up">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                </button>
-                <button class="btn-icon move-down" title="Move Down">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-                <button class="btn-icon remove-addon text-red" title="Remove Addon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-        </div>
-    </template>
-
-    <script type="module" src="admin.js"></script>
+    <script src="landing.js" defer></script>
 </body>
 </html>
