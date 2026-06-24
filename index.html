@@ -49,22 +49,44 @@
     <header class="hero">
         <div class="hero-backdrops" id="heroBackdrops"></div>
         <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <div class="hero-badge animate-on-scroll">
-                <span class="pulse-dot"></span>
-                7 Days Free — No Credit Card Required
+        <div class="hero-inner">
+            <!-- LEFT: copy + CTAs -->
+            <div class="hero-content">
+                <div class="hero-badge animate-on-scroll">
+                    <span class="pulse-dot"></span>
+                    7 Days Free — No Credit Card Required
+                </div>
+                <h1 class="hero-title animate-on-scroll">
+                    All your streaming.<br>
+                    <span class="gradient-text">One app. ₱49/month.</span>
+                </h1>
+                <p class="hero-lede animate-on-scroll">
+                    Netflix, Prime, Disney+, HBO Max, Apple TV+, Paramount+, Hulu, Crunchyroll — plus 27 live Philippine channels. Replace ₱3,299 of subscriptions with one link.
+                </p>
+                <div class="hero-pricing animate-on-scroll">
+                    <span class="pricing-pill">₱49<span class="pricing-pill-unit">/month</span></span>
+                    <p class="pricing-sub">₱1.63 per day — less than your coffee</p>
+                </div>
+                <div class="hero-ctas animate-on-scroll">
+                    <a href="#pricing" class="btn btn-primary btn-lg">Get 7 Days Free →</a>
+                    <a href="#features" class="btn btn-secondary btn-lg">See What's Included</a>
+                </div>
             </div>
-            <h1 class="hero-title animate-on-scroll">
-                All your streaming.<br>
-                <span class="gradient-text">One app. ₱49/month.</span>
-            </h1>
-            <div class="hero-pricing animate-on-scroll">
-                <span class="pricing-pill">₱49<span class="pricing-pill-unit">/month</span></span>
-                <p class="pricing-sub">₱1.63 per day — less than your coffee</p>
-            </div>
-            <div class="hero-ctas animate-on-scroll">
-                <a href="#pricing" class="btn btn-primary btn-lg">Get 7 Days Free →</a>
-                <a href="#pricing" class="btn btn-secondary btn-lg">See Pricing</a>
+            <!-- RIGHT: auto-advancing trailer-preview card -->
+            <div class="hero-preview animate-on-scroll" id="heroPreview">
+                <div class="preview-card">
+                    <div class="preview-poster" id="previewPoster"></div>
+                    <div class="preview-info">
+                        <span class="preview-badge">NOW STREAMING</span>
+                        <h3 class="preview-title" id="previewTitle">Project Hail Mary</h3>
+                        <p class="preview-meta" id="previewMeta">2026 · Sci-Fi</p>
+                        <div class="preview-progress" id="previewProgress"></div>
+                    </div>
+                    <div class="preview-chrome">
+                        <span class="preview-live"><span class="live-dot"></span>LIVE 4K</span>
+                        <span class="preview-quality">Dolby Vision · Atmos</span>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="hero-indicators" id="heroIndicators"></div>
@@ -74,18 +96,44 @@
     <section class="brand-comparison">
         <p class="comparison-label">What you pay now</p>
         <div class="comparison-brands">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Logonfx.svg/512px-Logonfx.svg.png" alt="Netflix" class="brand-logo" loading="lazy">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Prime_Video_logo_%282021%29.svg/512px-Prime_Video_logo_%282021%29.svg.png" alt="Prime Video" class="brand-logo" loading="lazy">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/512px-Disney%2B_logo.svg.png" alt="Disney+" class="brand-logo" loading="lazy">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Crunchyroll_Logo_2022.svg/512px-Crunchyroll_Logo_2022.svg.png" alt="Crunchyroll" class="brand-logo" loading="lazy">
+            <div class="brand-item">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/netflix.svg" alt="Netflix" class="brand-logo-svg">
+            </div>
+            <div class="brand-item">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/primevideo.svg" alt="Prime Video" class="brand-logo-svg">
+            </div>
+            <div class="brand-item">
+                <img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/disney-plus-us.png" alt="Disney+" class="brand-logo-png">
+            </div>
+            <div class="brand-item">
+                <img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/hbo-max-us.png" alt="HBO Max" class="brand-logo-png">
+            </div>
+            <div class="brand-item">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/appletv.svg" alt="Apple TV+" class="brand-logo-svg">
+            </div>
+            <div class="brand-item">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/crunchyroll.svg" alt="Crunchyroll" class="brand-logo-svg">
+            </div>
+            <div class="brand-item">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/hulu.svg" alt="Hulu" class="brand-logo-svg">
+            </div>
+            <div class="brand-item">
+                <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/paramountplus.svg" alt="Paramount+" class="brand-logo-svg">
+            </div>
+            <div class="brand-item">
+                <span class="brand-text">Cignal TV</span>
+            </div>
+            <div class="brand-item">
+                <span class="brand-text">Sky Cable</span>
+            </div>
         </div>
-        <p class="comparison-total">₱656/month</p>
+        <p class="comparison-total">₱3,299<span class="comparison-period">/month</span></p>
         <div class="comparison-arrow animate-on-scroll">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
         </div>
         <img src="https://i.ibb.co/J91qPG0/Logo-1080x1080.png" alt="Nuvio" class="nuvio-logo-glow animate-on-scroll" width="80" height="80" loading="lazy">
-        <p class="comparison-price gradient-text animate-on-scroll">₱49/month</p>
-        <span class="save-badge animate-on-scroll">Save 92%</span>
+        <p class="comparison-price gradient-text animate-on-scroll">₱49<span class="comparison-period">/month</span></p>
+        <span class="save-badge animate-on-scroll">Save 98% — ₱3,250/month back in your pocket</span>
     </section>
 
     <!-- ============ TOP MOVIES ============ -->
@@ -130,7 +178,7 @@
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/tmc-ph.png" alt="Tagalized Movie Channel" loading="lazy"><span class="channel-name">Tagalized Movie</span></div>
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/tv-maria-ph.png" alt="TV Maria" loading="lazy"><span class="channel-name">TV Maria</span></div>
                     <div class="channel-card"><img src="https://i.imgur.com/Rhrf4nj.jpeg" alt="INC TV HD" loading="lazy"><span class="channel-name">INC TV HD</span></div>
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/cltc-ph.png" alt="CLTC 36" loading="lazy"><span class="channel-name">CLTC 36</span></div>
+                    <div class="channel-card"><span class="channel-fallback">CLTC 36</span></div>
                     <div class="channel-card"><img src="https://i.imgur.com/G7lONcu.png" alt="Vegas Life TV" loading="lazy"><span class="channel-name">Vegas Life TV</span></div>
                     <div class="channel-card"><img src="https://ml02dtnc01wc.i.optimole.com/w:512/h:512/q:mauto/https://mindanownetwork.com/wp-content/uploads/2024/11/Mindanow-Network-Logo-Vertical.png" alt="Mindanow Network TV" loading="lazy"><span class="channel-name">Mindanow Network TV</span></div>
                 </div>
@@ -139,20 +187,20 @@
             <div class="channel-group animate-on-scroll">
                 <h3 class="channel-group-title">VIP &amp; International</h3>
                 <div class="channel-grid">
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/cbs-news-us.png" alt="CBS News 24/7" loading="lazy"><span class="channel-name">CBS News 24/7</span></div>
+                    <div class="channel-card"><span class="channel-fallback">CBS News 24/7</span></div>
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/abc-news-us.png" alt="ABC News Live" loading="lazy"><span class="channel-name">ABC News Live</span></div>
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/aljazeera-uk.png" alt="Al Jazeera English" loading="lazy"><span class="channel-name">Al Jazeera English</span></div>
                     <div class="channel-card"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Abante_masthead.svg/500px-Abante_masthead.svg.png" alt="Abante" loading="lazy"><span class="channel-name">Abante</span></div>
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/baby-shark-us.png" alt="Baby Shark TV" loading="lazy"><span class="channel-name">Baby Shark TV</span></div>
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/tom-and-jerry-us.png" alt="Tom and Jerry" loading="lazy"><span class="channel-name">Tom and Jerry</span></div>
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/toon-goggles-us.png" alt="Toon Goggles" loading="lazy"><span class="channel-name">Toon Goggles</span></div>
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/lego-us.png" alt="LEGO Channel" loading="lazy"><span class="channel-name">LEGO Channel</span></div>
+                    <div class="channel-card"><span class="channel-fallback">Baby Shark TV</span></div>
+                    <div class="channel-card"><span class="channel-fallback">Tom &amp; Jerry</span></div>
+                    <div class="channel-card"><span class="channel-fallback">Toon Goggles</span></div>
+                    <div class="channel-card"><span class="channel-fallback">LEGO Channel</span></div>
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/disney-channel-us.png" alt="Disney Channel" loading="lazy"><span class="channel-name">Disney Channel</span></div>
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/disney-xd-us.png" alt="Disney XD" loading="lazy"><span class="channel-name">Disney XD</span></div>
                     <div class="channel-card"><img src="https://images.template.net/494381/Pokemon-Logo-Clipart-edit-online.png" alt="Pokemon" loading="lazy"><span class="channel-name">Pokemon</span></div>
                     <div class="channel-card"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Crunchyroll_Logo_2022.svg/512px-Crunchyroll_Logo_2022.svg.png" alt="Crunchyroll" loading="lazy"><span class="channel-name">Crunchyroll</span></div>
                     <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/aniplus-ph.png" alt="Aniplus Asia" loading="lazy"><span class="channel-name">Aniplus Asia</span></div>
-                    <div class="channel-card"><img src="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/premier-sports-uk.png" alt="Premier Sports" loading="lazy"><span class="channel-name">Premier Sports</span></div>
+                    <div class="channel-card"><span class="channel-fallback">Premier Sports</span></div>
                 </div>
             </div>
         </div>
