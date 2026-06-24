@@ -96,7 +96,7 @@ const SUPPORT_URL = "";
 // Returned instantly with ZERO Firestore reads
 const HARDCODED_MANIFEST = {
   id: "com.nuvio.bundle.v2",
-  version: "1.4.0",
+  version: "1.4.1",
   name: "Nuvio Bundle",
   description: "All your premium addons in one unified master bundle — powered by Nuvio.",
   resources: ["stream", "meta", "catalog", "subtitles"],
@@ -200,54 +200,7 @@ const HARDCODED_MANIFEST = {
 // Latest Netflix Series, Prime, Disney+, HBO Max, Apple TV+,
 // Crunchyroll, Top Airing Anime.
 // ============================================================
-const HIDDEN_CATALOGS = new Set([
-  // Cinemeta
-  "cinemeta___top|series",                   // Popular Series (Cinemeta)
-  "cinemeta___imdbRating|movie",             // Featured Movies
-  "cinemeta___imdbRating|series",            // Featured Series
-
-  // Rotten Tomatoes
-  "tomatometadata___rtfresh_movie|movie",    // RT Certified Fresh
-  "tomatometadata___rtfresh_series|series",  // RT Fresh TV Shows
-
-  // AnimeKitsu
-  "animekitsu___kitsu-anime-trending|anime", // Trending Anime
-  "animekitsu___kitsu-anime-popular|anime",  // Popular Anime
-
-  // AIOMetadata — Series versions of streaming services
-  "aiometadata___mdblist.105461|anime",      // Popular Anime Series
-  "aiometadata___mdblist.88329|series",      // Netflix Series
-  "aiometadata___mdblist.88333|series",      // Prime Series
-  "aiometadata___mdblist.88323|series",      // Disney+ Series
-  "aiometadata___mdblist.88325|series",      // HBO Max Series
-  "aiometadata___mdblist.88319|series",      // Apple TV+ Series
-  "aiometadata___mdblist.88327|series",      // Hulu Series
-  "aiometadata___mdblist.88331|series",      // Paramount+ Series
-  "aiometadata___mdblist.99202|series",      // Crunchyroll Series
-  "aiometadata___mdblist.42836|series",      // Popular Series (AIO)
-  "aiometadata___mdblist.88434|series",      // Trending Series
-
-  // AIOMetadata — Movie streaming services (other than the 9 to keep)
-  "aiometadata___mdblist.88328|movie",       // Netflix (movie)
-  "aiometadata___mdblist.88326|movie",       // Hulu
-  "aiometadata___mdblist.88330|movie",       // Paramount+
-
-  // AIOMetadata — "Popular X" genre catalogs
-  "aiometadata___mdblist.91211|movie",       // Popular Action
-  "aiometadata___mdblist.91223|movie",       // Popular Comedy
-  "aiometadata___mdblist.91296|movie",       // Popular Drama
-  "aiometadata___mdblist.91215|movie",       // Popular Horror
-  "aiometadata___mdblist.91220|movie",       // Popular Sci-Fi
-  "aiometadata___mdblist.91893|movie",       // Popular Thriller
-  "aiometadata___mdblist.128051|movie",      // Popular Documentary
-  "aiometadata___mdblist.116037|movie",      // Popular Animation
-  "aiometadata___mdblist.42822|movie",       // Popular Movies (AIO)
-  "aiometadata___mdblist.87667|movie",       // Trending
-
-  // Live TV (accessible via Collections tab — hide from home screen)
-  "pinoytv___channels|tv",                   // 🇵🇭 Philippine Live TV
-  "vipchannels___channels|tv",               // ⭐ VIP Cherry Pick TV
-]);
+const HIDDEN_CATALOGS = new Set([]);
 
 // Returns true if a catalog (by id + type) is in the hide list.
 function isCatalogHidden(id, type) {
