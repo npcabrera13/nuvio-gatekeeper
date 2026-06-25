@@ -57,6 +57,9 @@ const modalTitle    = document.getElementById('modal-title');
 const editTokenId   = document.getElementById('edit-token-id');
 const modalName     = document.getElementById('modal-name');
 const modalNotes    = document.getElementById('modal-notes');
+const modalNuvioEmail = document.getElementById('modal-nuvio-email');
+const modalNuvioPassword = document.getElementById('modal-nuvio-password');
+const filterUnassignedOnly = document.getElementById('filter-unassigned-only');
 const modalTokenKey = document.getElementById('modal-token-key');
 const tokenKeyGroup = document.getElementById('token-key-group');
 const modalDays     = document.getElementById('modal-days');
@@ -96,6 +99,8 @@ document.getElementById('open-create-modal').addEventListener('click', () => {
     editTokenId.value = '';
     modalName.value = '';
     modalNotes.value = '';
+    modalNuvioEmail.value = '';
+    modalNuvioPassword.value = '';
     modalDays.value = '30';
     modalTokenKey.value = '';
     tokenKeyGroup.classList.add('hidden');
@@ -206,6 +211,8 @@ function openEditModal(id, dataStr) {
     editTokenId.value = id;
     modalName.value = data.name || '';
     modalNotes.value = data.notes || '';
+    modalNuvioEmail.value = data.nuvioEmail || '';
+    modalNuvioPassword.value = data.nuvioPassword || '';
     modalTokenKey.value = id;
     tokenKeyGroup.classList.remove('hidden');
     daysGroup.classList.add('hidden'); // Editing days is done via Renew modal
@@ -236,7 +243,10 @@ saveTokenBtn.addEventListener('click', async () => {
                 name: nameVal,
                 status: 'active',
                 createdAt: serverTimestamp(),
-                expiresAt: expiresAt
+                expiresAt: expiresAt,
+                nuvioEmail: modalNuvioEmail.value.trim(),
+                nuvioPassword: modalNuvioPassword.value.trim(),
+                assignedTo: null
             });
             showToast('✅ Token generated successfully.');
             
@@ -253,7 +263,9 @@ saveTokenBtn.addEventListener('click', async () => {
             const notesVal = modalNotes.value.trim();
             const updates = {
                 name: nameVal,
-                notes: notesVal
+                notes: notesVal,
+                nuvioEmail: modalNuvioEmail.value.trim(),
+                nuvioPassword: modalNuvioPassword.value.trim()
             };
 
             if (oldId !== newTokenId) {
@@ -330,6 +342,18 @@ window.toggleStatus = async (id, currentStatus) => {
     } catch (e) {
         console.error(e);
         showToast('❌ Failed to update status.');
+    }
+};
+
+window.unassignToken = async (id) => {
+    if (!confirm(`Are you sure you want to unassign this token?\n\nThis will make it available to be auto-assigned to the next customer.`)) return;
+    try {
+        await updateDoc(doc(db, "customers", id), { assignedTo: null });
+        showToast(`✅ Token unassigned.`);
+        loadData();
+    } catch (e) {
+        console.error(e);
+        showToast('❌ Failed to unassign token.');
     }
 };
 
@@ -602,6 +626,20 @@ async function loadData() {
             const status = data.status || 'blocked';
 
             const notes  = data.notes || '';
+            const assignedTo = data.assignedTo || null;
+            
+            let assignedBadge;
+            let unassignBtn = '';
+            if (assignedTo === null) {
+                assignedBadge = `<span class="status-badge status-active" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">🟢 Available</span>`;
+            } else {
+                assignedBadge = `<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">🔴 Assigned: ${String(assignedTo).substring(0, 8)}...</span>`;
+                unassignBtn = `
+                    <button class="btn-icon" data-tip="Unassign" onclick="window.unassignToken('${id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    </button>
+                `;
+            }
 
             const expiry = getExpiryInfo(data.expiresAt);
             const isBlocked  = status !== 'active';
@@ -635,6 +673,7 @@ async function loadData() {
                     ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
                 </td>
                 <td data-label="Token Key"><span class="cell-token">${id}</span></td>
+                <td class="cell-assigned" data-assigned="${assignedTo === null ? 'null' : 'assigned'}" data-label="Assigned To">${assignedBadge}</td>
                 <td data-label="Expires">
                     <div>${expiry.text}</div>
                     ${expiry.daysLabel ? `<div style="font-size:0.8rem;color:var(--text-muted);">${expiry.daysLabel}</div>` : ''}
@@ -642,6 +681,7 @@ async function loadData() {
                 <td data-label="Status">${statusBadge}</td>
                 <td data-label="Actions">
                     <div class="action-buttons">
+                        ${unassignBtn}
                         <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${safeNameJS.replace(/"/g, '&quot;')}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </button>
@@ -700,9 +740,15 @@ function applyFilters() {
         const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
         
         const status = row.dataset.status; // 'active' or 'blocked'
+        const assignedCell = row.querySelector('.cell-assigned');
+        const assignedStatus = assignedCell ? assignedCell.dataset.assigned : 'null';
+
         let matchesFilter = true;
         if (currentFilter === 'active' && status !== 'active') matchesFilter = false;
         if (currentFilter === 'blocked' && status !== 'blocked') matchesFilter = false;
+
+        const showUnassignedOnly = filterUnassignedOnly && filterUnassignedOnly.checked;
+        if (showUnassignedOnly && assignedStatus !== 'null') matchesFilter = false;
         
         if (matchesSearch && matchesFilter) {
             row.style.display = '';
@@ -726,6 +772,7 @@ function applyFilters() {
 
 // Bind search input
 document.getElementById('roster-search')?.addEventListener('input', applyFilters);
+filterUnassignedOnly?.addEventListener('change', applyFilters);
 
 // Bind clickable stats cards
 function setupStatsFilter(cardId, filterType) {

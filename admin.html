@@ -90,6 +90,9 @@
                 <div class="roster-header">
                     <h2>Customer Roster</h2>
                     <div class="roster-actions">
+                        <label style="display:inline-flex; align-items:center; margin-right:1rem; font-size:0.85rem; color:var(--text-secondary); cursor:pointer;">
+                            <input type="checkbox" id="filter-unassigned-only" style="margin-right: 0.4rem;"> Show available only
+                        </label>
                         <div class="input-group" style="margin-right: 1rem; display: inline-flex;">
                             <span class="input-icon"><i class="fas fa-search"></i></span>
                             <input type="text" id="roster-search" class="form-input" placeholder="Search tokens or names..." style="width: 250px; padding-left: 2.2rem; height: 34px; font-size: 0.85rem;">
@@ -110,6 +113,7 @@
                         <tr>
                             <th>Customer</th>
                             <th>Token Key</th>
+                            <th>Assigned To</th>
                             <th>Expires</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -143,6 +147,16 @@
                 <div class="form-group">
                     <label>Notes (Email, Info, etc.)</label>
                     <textarea id="modal-notes" class="form-input" placeholder="e.g. user@example.com" rows="2" style="resize: vertical;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Nuvio Account Email</label>
+                    <input type="text" id="modal-nuvio-email" class="form-input" placeholder="e.g. nuviotv1+1@gmail.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Nuvio Account Password</label>
+                    <input type="text" id="modal-nuvio-password" class="form-input" placeholder="e.g. 12345678">
                 </div>
 
                 <div class="form-group hidden" id="token-key-group">
