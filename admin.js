@@ -94,6 +94,12 @@ document.querySelectorAll('.close-modal').forEach(btn => {
     });
 });
 
+document.getElementById('open-bulk-modal').addEventListener('click', () => {
+    bulkInput.value = '';
+    bulkDays.value = '30';
+    bulkModal.classList.remove('hidden');
+});
+
 document.getElementById('open-create-modal').addEventListener('click', () => {
     modalTitle.textContent = "Create New Token";
     editTokenId.value = '';
@@ -292,6 +298,62 @@ saveTokenBtn.addEventListener('click', async () => {
     saveTokenBtn.disabled = false;
     saveTokenBtn.textContent = isEdit ? "Save Changes" : "Generate Token";
 });
+
+bulkGenerateBtn.addEventListener('click', async () => {
+    const text = bulkInput.value.trim();
+    if (!text) return showToast('❌ No input provided.');
+    
+    const lines = text.split('\n').filter(l => l.trim() !== '');
+    const days = parseInt(bulkDays.value, 10);
+    if (isNaN(days) || days < 1) return showToast('❌ Invalid days.');
+    
+    bulkGenerateBtn.disabled = true;
+    bulkGenerateBtn.textContent = "Generating...";
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const line of lines) {
+        const parts = line.split(',');
+        if (parts.length < 2) {
+            failCount++;
+            continue;
+        }
+        const email = parts[0].trim();
+        const pwd = parts.slice(1).join(',').trim(); // in case password has commas
+        
+        try {
+            const randomId = "nuvio_" + Math.random().toString(36).substring(2, 9);
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + days);
+
+            await setDoc(doc(db, "customers", randomId), {
+                name: email,
+                status: 'active',
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt,
+                nuvioEmail: email,
+                nuvioPassword: pwd,
+                assignedTo: null
+            });
+            successCount++;
+        } catch (err) {
+            console.error("Bulk error:", err);
+            failCount++;
+        }
+    }
+    
+    bulkModal.classList.add('hidden');
+    bulkGenerateBtn.disabled = false;
+    bulkGenerateBtn.textContent = "Generate All";
+    showToast(`✅ Bulk created: ${successCount} success, ${failCount} failed.`);
+    loadData();
+});
+
+window.copyCredentials = (email, pwd) => {
+    const text = `Email: ${email}\nPassword: ${pwd}`;
+    copyToClipboard(text);
+};
 
 // ── Renew/Toggle/Delete Actions ─────────────────────────────────────────────
 let pendingRenewId = null;
@@ -607,12 +669,17 @@ async function loadData() {
         spinner.style.display = 'none';
         tbody.innerHTML = '';
 
-        let activeCount = 0, blockedCount = 0;
+        
+        let totalCount = snapshot.size;
+        let availableCount = 0;
+        let assignedCount = 0;
+        let blockedOrExpiredCount = 0;
 
         if (snapshot.empty) {
             noCustomers.classList.remove('hidden');
             statTotal.textContent   = 0;
-            statActive.textContent  = 0;
+            statAvailable.textContent  = 0;
+            statAssigned.textContent = 0;
             statBlocked.textContent = 0;
             return;
         }
@@ -627,53 +694,73 @@ async function loadData() {
 
             const notes  = data.notes || '';
             const assignedTo = data.assignedTo || null;
+            const nuvioEmail = data.nuvioEmail || '';
+            const nuvioPassword = data.nuvioPassword || '';
             
-            let assignedBadge;
-            let unassignBtn = '';
-            if (assignedTo === null) {
-                assignedBadge = `<span class="status-badge status-active" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">🟢 Available</span>`;
-            } else {
-                assignedBadge = `<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">🔴 Assigned: ${String(assignedTo).substring(0, 8)}...</span>`;
-                unassignBtn = `
-                    <button class="btn-icon" data-tip="Unassign" onclick="window.unassignToken('${id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                    </button>
-                `;
-            }
-
             const expiry = getExpiryInfo(data.expiresAt);
             const isBlocked  = status !== 'active';
             const isExpired  = expiry.isExpired;
             const isInactive = isBlocked || isExpired;
 
-            if (!isInactive) activeCount++;
-            else blockedCount++;
+            // Calculate stats
+            if (isInactive) {
+                blockedOrExpiredCount++;
+            } else if (assignedTo !== null) {
+                assignedCount++;
+            } else if (assignedTo === null && nuvioEmail !== '') {
+                availableCount++;
+            } else {
+                // unconfigured
+            }
 
             // Badges
             let statusBadge = isExpired ? `<span class="status-badge status-blocked" style="cursor:not-allowed;" data-tip="Cannot unblock expired token">Expired</span>` :
                               isBlocked ? `<span class="status-badge status-blocked" style="cursor:pointer;" data-tip="Click to Unblock" onclick="window.toggleStatus('${id}', '${status}')">Blocked</span>` :
                               `<span class="status-badge status-active" style="cursor:pointer;" data-tip="Click to Block" onclick="window.toggleStatus('${id}', '${status}')">Active</span>`;
 
+            let assignedBadge;
+            let unassignBtn = '';
+            let credentialsBtn = '';
+            
+            if (assignedTo === null) {
+                assignedBadge = `<span class="status-badge status-active" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">🟢 Available</span>`;
+            } else {
+                assignedBadge = `<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">🔴 Assigned: ${String(assignedTo).substring(0, 8)}</span>`;
+                unassignBtn = `
+                    <button class="btn-icon" data-tip="Unassign" onclick="window.unassignToken('${id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    </button>
+                `;
+                if (nuvioEmail && nuvioPassword) {
+                    credentialsBtn = `
+                        <button class="btn-icon" data-tip="Copy Credentials" onclick="window.copyCredentials('${nuvioEmail.replace(/'/g, "\'")}', '${nuvioPassword.replace(/'/g, "\'")}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    `;
+                }
+            }
+
             const expiresMillis = data.expiresAt ? data.expiresAt.toMillis() : 0;
             const dataStr = encodeURIComponent(JSON.stringify(data));
 
-
-
-
             const tr = document.createElement('tr');
             tr.dataset.status = isInactive ? 'blocked' : 'active';
+            tr.dataset.assigned = assignedTo === null ? 'null' : 'assigned';
+            tr.dataset.configured = nuvioEmail === '' ? 'unconfigured' : 'configured';
             
             const safeNameHTML = String(name).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
             const safeNotesHTML = String(notes).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
             const safeNameJS = String(name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
             tr.innerHTML = `
-                <td class="cell-customer" data-label="Customer">
+                <td class="cell-customer" data-label="Customer Name">
                     <div>${safeNameHTML}</div>
                     ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
                 </td>
-                <td data-label="Token Key"><span class="cell-token">${id}</span></td>
-                <td class="cell-assigned" data-assigned="${assignedTo === null ? 'null' : 'assigned'}" data-label="Assigned To">${assignedBadge}</td>
+                <td data-label="Token"><span class="cell-token">${id}</span></td>
+                <td data-label="Nuvio Email" class="cell-email">${nuvioEmail || '<span style="color:var(--text-muted)">— Not set —</span>'}</td>
+                <td data-label="Nuvio Password">${nuvioPassword || '—'}</td>
+                <td class="cell-assigned" data-label="Assigned To">${assignedBadge}</td>
                 <td data-label="Expires">
                     <div>${expiry.text}</div>
                     ${expiry.daysLabel ? `<div style="font-size:0.8rem;color:var(--text-muted);">${expiry.daysLabel}</div>` : ''}
@@ -681,23 +768,17 @@ async function loadData() {
                 <td data-label="Status">${statusBadge}</td>
                 <td data-label="Actions">
                     <div class="action-buttons">
+                        ${credentialsBtn}
                         ${unassignBtn}
-                        <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${safeNameJS.replace(/"/g, '&quot;')}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
                         <button class="btn-icon" data-tip="Edit" onclick="window.openEditModal('${id}', '${dataStr}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${safeNameJS.replace(/"/g, '&quot;')}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                         </button>
                         <button class="btn-icon" data-tip="Renew" onclick="window.openRenewModal('${id}', '${safeNameJS.replace(/"/g, '&quot;')}', ${expiresMillis})">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                         </button>
-                        <button class="btn-icon" data-tip="${isBlocked ? 'Unblock Account' : 'Block Account'}" onclick="window.toggleStatus('${id}', '${status}')">
-                            ${isBlocked 
-                                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
-                                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`
-                            }
-                        </button>
-
                         <button class="btn-icon text-red" data-tip="Delete" onclick="window.deleteToken('${id}')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
@@ -708,9 +789,11 @@ async function loadData() {
             tbody.appendChild(tr);
         });
 
-        statTotal.textContent   = snapshot.size;
-        statActive.textContent  = activeCount;
-        statBlocked.textContent = blockedCount;
+        statTotal.textContent   = totalCount;
+        statAvailable.textContent  = availableCount;
+        statAssigned.textContent = assignedCount;
+        statBlocked.textContent = blockedOrExpiredCount;
+        
         
         // Trigger search filter again in case data changed while searching
         const e = new Event('input');
@@ -723,7 +806,7 @@ async function loadData() {
 }
 
 // ── Roster Filtering & Search ────────────────────────────────────────────────
-let currentFilter = 'all'; // 'all', 'active', 'blocked'
+let currentFilter = 'all'; 
 
 function applyFilters() {
     const searchTerm = document.getElementById('roster-search')?.value.toLowerCase() || '';
@@ -733,22 +816,31 @@ function applyFilters() {
     rows.forEach(row => {
         const customerCell = row.querySelector('.cell-customer');
         const tokenCell = row.querySelector('.cell-token');
+        const emailCell = row.querySelector('.cell-email');
         if (!customerCell || !tokenCell) return;
 
         const name = customerCell.textContent.toLowerCase();
         const id = tokenCell.textContent.toLowerCase();
-        const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
+        const email = emailCell ? emailCell.textContent.toLowerCase() : '';
+        const assignedId = row.querySelector('.cell-assigned').textContent.toLowerCase();
+        
+        const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm) || email.includes(searchTerm) || assignedId.includes(searchTerm);
         
         const status = row.dataset.status; // 'active' or 'blocked'
-        const assignedCell = row.querySelector('.cell-assigned');
-        const assignedStatus = assignedCell ? assignedCell.dataset.assigned : 'null';
-
+        const assignedStatus = row.dataset.assigned; // 'assigned' or 'null'
+        const configuredStatus = row.dataset.configured; // 'configured' or 'unconfigured'
+        
         let matchesFilter = true;
-        if (currentFilter === 'active' && status !== 'active') matchesFilter = false;
-        if (currentFilter === 'blocked' && status !== 'blocked') matchesFilter = false;
-
-        const showUnassignedOnly = filterUnassignedOnly && filterUnassignedOnly.checked;
-        if (showUnassignedOnly && assignedStatus !== 'null') matchesFilter = false;
+        
+        if (currentFilter === 'available') {
+            if (assignedStatus !== 'null' || configuredStatus === 'unconfigured' || status === 'blocked') matchesFilter = false;
+        } else if (currentFilter === 'assigned') {
+            if (assignedStatus !== 'assigned') matchesFilter = false;
+        } else if (currentFilter === 'unconfigured') {
+            if (configuredStatus !== 'unconfigured') matchesFilter = false;
+        } else if (currentFilter === 'blocked') {
+            if (status !== 'blocked') matchesFilter = false;
+        }
         
         if (matchesSearch && matchesFilter) {
             row.style.display = '';
@@ -758,7 +850,6 @@ function applyFilters() {
         }
     });
     
-    // Show/hide "No matching customers" message
     if (visibleCount === 0 && rows.length > 0) {
         noCustomers.querySelector('p').textContent = "No matching customers found.";
         noCustomers.classList.remove('hidden');
@@ -770,27 +861,39 @@ function applyFilters() {
     }
 }
 
-// Bind search input
 document.getElementById('roster-search')?.addEventListener('input', applyFilters);
-filterUnassignedOnly?.addEventListener('change', applyFilters);
+
+// Bind filter buttons
+document.querySelectorAll('.btn-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-filter').forEach(b => {
+            b.classList.remove('active');
+            b.classList.add('btn-outline');
+        });
+        btn.classList.add('active');
+        btn.classList.remove('btn-outline');
+        currentFilter = btn.dataset.filter;
+        applyFilters();
+    });
+});
 
 // Bind clickable stats cards
 function setupStatsFilter(cardId, filterType) {
     const cardEl = document.getElementById(cardId);
     if (!cardEl) return;
     cardEl.addEventListener('click', () => {
-        // Toggle active visual state
+        // Find corresponding filter button and click it
+        const btn = document.querySelector(`.btn-filter[data-filter="${filterType}"]`);
+        if (btn) btn.click();
+        
         document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
         cardEl.classList.add('active-filter');
-        
-        // Apply filter state
-        currentFilter = filterType;
-        applyFilters();
     });
 }
 
-setupStatsFilter('filter-total', 'all');
-setupStatsFilter('filter-active', 'active');
+setupStatsFilter('filter-all', 'all');
+setupStatsFilter('filter-available', 'available');
+setupStatsFilter('filter-assigned', 'assigned');
 setupStatsFilter('filter-blocked', 'blocked');
 
 document.getElementById('refresh-data-btn')?.addEventListener('click', () => {
