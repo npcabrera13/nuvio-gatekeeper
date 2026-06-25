@@ -874,7 +874,7 @@ tr:hover td {
 @media (max-width: 768px) {
     /* Stack stats cards */
     .stats-row {
-        flex-direction: column;
+        grid-template-columns: 1fr !important;
     }
     
     /* Responsive stacked card table for mobile */
@@ -1059,6 +1059,8 @@ tr:hover td {
     
     #customers-table td:last-child {
         border-bottom: none;
+        flex-direction: column;
+        align-items: flex-start;
     }
     
     #customers-table td::before {
@@ -1070,8 +1072,15 @@ tr:hover td {
         padding-right: 1rem;
     }
     
+    #customers-table td:last-child::before {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
     .action-buttons {
+        display: flex;
         flex-wrap: wrap;
-        gap: 0.25rem;
+        gap: 0.5rem;
+        width: 100%;
     }
 }
