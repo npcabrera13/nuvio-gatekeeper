@@ -54,41 +54,49 @@
         </nav>
 
         <!-- Stats Row -->
-        <div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
-            <div class="stat-card premium-glass active-filter" id="filter-all">
-                <div class="stat-icon-wrapper blue-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">Total Tokens</span>
-                    <span class="stat-value" id="stat-total">0</span>
-                </div>
-            </div>
-            <div class="stat-card premium-glass" id="filter-available">
-                <div class="stat-icon-wrapper green-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">Available</span>
-                    <span class="stat-value text-green" id="stat-available">0</span>
+        <div class="stats-row" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:1rem; margin-bottom:1.5rem;">
+            <div class="stat-card premium-glass" id="filter-total" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper blue-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-total" style="font-size:1.5rem; font-weight:700;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Total Tokens</span>
+                    </div>
                 </div>
             </div>
-            <div class="stat-card premium-glass" id="filter-assigned">
-                <div class="stat-icon-wrapper purple-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-label">Assigned</span>
-                    <span class="stat-value" style="color: #a78bfa;" id="stat-assigned">0</span>
+            <div class="stat-card premium-glass" id="filter-available" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper green-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value text-green" id="stat-available" style="font-size:1.5rem; font-weight:700; color:#10b981;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Available</span>
+                    </div>
                 </div>
             </div>
-            <div class="stat-card premium-glass" id="filter-blocked">
-                <div class="stat-icon-wrapper red-glow">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+            <div class="stat-card premium-glass" id="filter-assigned" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper purple-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-assigned" style="font-size:1.5rem; font-weight:700; color:#a78bfa;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Assigned</span>
+                    </div>
                 </div>
-                <div class="stat-info">
-                    <span class="stat-label">Expired / Blocked</span>
-                    <span class="stat-value text-red" id="stat-blocked">0</span>
+            </div>
+            <div class="stat-card premium-glass" id="filter-expired" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper red-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value text-red" id="stat-expired" style="font-size:1.5rem; font-weight:700; color:#ef4444;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Expired/Blocked</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -228,25 +236,38 @@
     <div id="renew-modal" class="overlay hidden">
         <div class="modal-card premium-glass">
             <div class="modal-header">
-                <h3>Edit Expiry — <span id="renew-customer-name"></span></h3>
+                <h3>Manage Expiry — <span id="renew-customer-name"></span></h3>
                 <button class="btn-icon close-modal" data-target="renew-modal">×</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label>Option 1: Add Days</label>
-                    <input type="number" id="renew-days" class="form-input" value="7" min="1">
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">Adds days to current expiry (or from today if expired)</p>
+                <div style="text-align:center; margin-bottom:1.5rem;">
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">Current Expiry</p>
+                    <p id="renew-current-expiry-display" style="font-size:1.1rem; font-weight:600;"></p>
+                    <p id="renew-days-remaining" style="font-size:0.8rem; margin-top:0.25rem;"></p>
                 </div>
-                <div class="form-divider" style="margin: 1rem 0; border-top: 1px solid rgba(255,255,255,0.08);"></div>
+                
                 <div class="form-group">
-                    <label>Option 2: Set Exact Expiry Date</label>
-                    <input type="datetime-local" id="renew-exact-date" class="form-input">
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">If set, this overrides "Add Days" above</p>
+                    <label>Days to Add or Remove</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" id="renew-days-input" class="form-input" value="7" min="1" style="flex:1;">
+                        <button id="renew-add-btn" class="btn btn-primary" style="white-space:nowrap;">+ Add</button>
+                        <button id="renew-remove-btn" class="btn btn-outline" style="white-space:nowrap; border-color:rgba(239,68,68,0.3); color:#ef4444;">− Remove</button>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">Adding extends the expiry. Removing shortens it. If the token is expired, adding starts from today.</p>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost close-modal" data-target="renew-modal">Cancel</button>
-                <button id="confirm-renew-btn" class="btn btn-glow">Confirm</button>
+                
+                <div class="form-divider" style="margin:1rem 0; border-top:1px solid rgba(255,255,255,0.08);"></div>
+                
+                <div class="form-group">
+                    <label>Quick Set</label>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <button class="btn btn-outline quick-set-btn" data-days="7" style="font-size:0.8rem;">7 days</button>
+                        <button class="btn btn-outline quick-set-btn" data-days="30" style="font-size:0.8rem;">30 days</button>
+                        <button class="btn btn-outline quick-set-btn" data-days="60" style="font-size:0.8rem;">60 days</button>
+                        <button class="btn btn-outline quick-set-btn" data-days="90" style="font-size:0.8rem;">90 days</button>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">Quick Set overwrites the expiry to exactly that many days from now.</p>
+                </div>
             </div>
         </div>
     </div>

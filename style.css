@@ -1014,27 +1014,64 @@ tr:hover td {
     flex-direction: column;
 }
 
-/* ── Responsive Table: hide less-important columns on narrow screens ── */
-@media (max-width: 1100px) {
-    /* Hide Nuvio Password and Assigned To columns */
-    #customers-table th:nth-child(4),
-    #customers-table td:nth-child(4),
-    #customers-table th:nth-child(5),
-    #customers-table td:nth-child(5) {
-        display: none;
-    }
+/* Table: no horizontal scroll ever */
+.table-responsive {
+    overflow-x: hidden;
+    width: 100%;
 }
 
-@media (max-width: 900px) {
-    /* Also hide Token Key and Nuvio Email columns */
-    #customers-table th:nth-child(2),
-    #customers-table td:nth-child(2),
-    #customers-table th:nth-child(3),
-    #customers-table td:nth-child(3) {
+#customers-table {
+    table-layout: fixed;
+    width: 100%;
+    word-wrap: break-word;
+}
+
+/* On mobile: convert table to stacked cards */
+@media (max-width: 768px) {
+    #customers-table thead {
         display: none;
     }
     
-    .filter-bar {
+    #customers-table, 
+    #customers-table tbody, 
+    #customers-table tr, 
+    #customers-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    #customers-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 0.5rem;
+        background: rgba(255,255,255,0.02);
+    }
+    
+    #customers-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        text-align: right;
+    }
+    
+    #customers-table td:last-child {
+        border-bottom: none;
+    }
+    
+    #customers-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-align: left;
+        padding-right: 1rem;
+    }
+    
+    .action-buttons {
         flex-wrap: wrap;
+        gap: 0.25rem;
     }
 }

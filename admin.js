@@ -370,49 +370,90 @@ window.openRenewModal = (id, name, currentMs) => {
     pendingRenewId = id;
     pendingRenewCurrentExpiry = currentMs;
     renewCustomerName.textContent = name;
-    renewDays.value = '7';
-    // Clear exact date input
-    const exactDateInput = document.getElementById('renew-exact-date');
-    if (exactDateInput) exactDateInput.value = '';
+    
+    // Show current expiry
+    const expiryDate = currentMs ? new Date(currentMs) : null;
+    const displayEl = document.getElementById('renew-current-expiry-display');
+    const remainingEl = document.getElementById('renew-days-remaining');
+    
+    if (expiryDate) {
+        displayEl.textContent = expiryDate.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const diff = expiryDate.getTime() - Date.now();
+        if (diff > 0) {
+            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            remainingEl.textContent = `${days} days remaining`;
+            remainingEl.style.color = '#10b981';
+        } else {
+            remainingEl.textContent = 'EXPIRED';
+            remainingEl.style.color = '#ef4444';
+        }
+    } else {
+        displayEl.textContent = 'No expiry set';
+        remainingEl.textContent = '';
+    }
+    
+    document.getElementById('renew-days-input').value = '7';
     renewModal.classList.remove('hidden');
 };
 
-confirmRenewBtn.addEventListener('click', async () => {
-    const exactDateInput = document.getElementById('renew-exact-date');
-    const exactDate = exactDateInput ? exactDateInput.value : '';
-    let newExpiry;
+// Add days button
+document.getElementById('renew-add-btn').addEventListener('click', async () => {
+    const days = parseInt(document.getElementById('renew-days-input').value, 10);
+    if (isNaN(days) || days < 1) return showToast('❌ Invalid number of days.');
     
-    if (exactDate) {
-        // Option 2: Set exact date
-        newExpiry = new Date(exactDate);
-    } else {
-        // Option 1: Add days
-        const days = parseInt(renewDays.value, 10);
-        if (isNaN(days) || days < 1) return alert("Invalid days");
-        
-        let baseDate = pendingRenewCurrentExpiry ? new Date(pendingRenewCurrentExpiry) : new Date();
-        if (baseDate.getTime() < Date.now()) baseDate = new Date(); // If expired, start from today
-        
-        baseDate.setDate(baseDate.getDate() + days);
-        newExpiry = baseDate;
-    }
-    
-    confirmRenewBtn.disabled = true;
+    let baseDate = pendingRenewCurrentExpiry ? new Date(pendingRenewCurrentExpiry) : new Date();
+    if (baseDate.getTime() < Date.now()) baseDate = new Date();
+    baseDate.setDate(baseDate.getDate() + days);
     
     try {
-        await updateDoc(doc(db, 'customers', pendingRenewId), {
-            expiresAt: newExpiry,
-            status: 'active'
-        });
-        showToast(exactDate ? '✅ Expiry date set.' : `✅ Added ${renewDays.value} days.`);
+        await updateDoc(doc(db, 'customers', pendingRenewId), { expiresAt: baseDate, status: 'active' });
+        showToast(`✅ Added ${days} days.`);
         renewModal.classList.add('hidden');
         loadData();
     } catch (e) {
-        console.error(e);
-        showToast('❌ Failed to update expiry.');
+        showToast('❌ Failed to add days.');
+    }
+});
+
+// Remove days button
+document.getElementById('renew-remove-btn').addEventListener('click', async () => {
+    const days = parseInt(document.getElementById('renew-days-input').value, 10);
+    if (isNaN(days) || days < 1) return showToast('❌ Invalid number of days.');
+    
+    let baseDate = pendingRenewCurrentExpiry ? new Date(pendingRenewCurrentExpiry) : new Date();
+    baseDate.setDate(baseDate.getDate() - days);
+    
+    // Don't allow setting expiry before now
+    if (baseDate.getTime() < Date.now()) {
+        baseDate = new Date(); // Set to now (effectively expires immediately)
     }
     
-    confirmRenewBtn.disabled = false;
+    try {
+        await updateDoc(doc(db, 'customers', pendingRenewId), { expiresAt: baseDate });
+        showToast(`✅ Removed ${days} days.`);
+        renewModal.classList.add('hidden');
+        loadData();
+    } catch (e) {
+        showToast('❌ Failed to remove days.');
+    }
+});
+
+// Quick set buttons (overwrite expiry to exactly N days from now)
+document.querySelectorAll('.quick-set-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const days = parseInt(btn.dataset.days, 10);
+        const newExpiry = new Date();
+        newExpiry.setDate(newExpiry.getDate() + days);
+        
+        try {
+            await updateDoc(doc(db, 'customers', pendingRenewId), { expiresAt: newExpiry, status: 'active' });
+            showToast(`✅ Set to ${days} days from now.`);
+            renewModal.classList.add('hidden');
+            loadData();
+        } catch (e) {
+            showToast('❌ Failed to set expiry.');
+        }
+    });
 });
 
 window.toggleStatus = async (id, currentStatus) => {
@@ -810,10 +851,34 @@ async function loadData() {
             tbody.appendChild(tr);
         });
 
-        statTotal.textContent   = totalCount;
-        statAvailable.textContent  = availableCount;
-        statAssigned.textContent = assignedCount;
-        statBlocked.textContent = blockedOrExpiredCount;
+        // Calculate stats from loaded data (ZERO extra Firestore reads)
+        let total = 0, available = 0, assigned = 0, expired = 0;
+        document.querySelectorAll('#customers-body tr').forEach(row => {
+            total++;
+            const assignedCell = row.querySelector('.cell-assigned');
+            const statusCell = row.dataset.status;
+            
+            if (assignedCell && assignedCell.dataset.assigned === 'null') {
+                available++;
+            } else if (assignedCell && assignedCell.dataset.assigned === 'assigned') {
+                assigned++;
+            }
+            
+            if (statusCell === 'blocked') {
+                expired++;
+            } else {
+                // Check if expired by date
+                const expiryText = row.querySelector('[data-label="Expires"] div')?.textContent || '';
+                if (expiryText.toLowerCase().includes('expired')) {
+                    expired++;
+                }
+            }
+        });
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-available').textContent = available;
+        document.getElementById('stat-assigned').textContent = assigned;
+        document.getElementById('stat-expired').textContent = expired;
         
         
         // Trigger search filter again in case data changed while searching
@@ -850,6 +915,7 @@ function applyFilters() {
         const status = row.dataset.status; // 'active' or 'blocked'
         const assignedStatus = row.dataset.assigned; // 'assigned' or 'null'
         const configuredStatus = row.dataset.configured; // 'configured' or 'unconfigured'
+        const expiryText = row.querySelector('[data-label="Expires"] div')?.textContent || '';
         
         let matchesFilter = true;
         
@@ -862,6 +928,11 @@ function applyFilters() {
         } else if (currentFilter === 'blocked') {
             if (status !== 'blocked') matchesFilter = false;
         }
+        
+        // Add stat filter checks
+        if (currentStatFilter === 'available' && assignedStatus !== 'null') matchesFilter = false;
+        if (currentStatFilter === 'assigned' && assignedStatus !== 'assigned') matchesFilter = false;
+        if (currentStatFilter === 'expired' && status !== 'blocked' && !expiryText.toLowerCase().includes('expired')) matchesFilter = false;
         
         if (matchesSearch && matchesFilter) {
             row.style.display = '';
@@ -881,6 +952,37 @@ function applyFilters() {
         noCustomers.classList.add('hidden');
     }
 }
+
+// Stat card click filters
+let currentStatFilter = 'all';
+
+document.getElementById('filter-total').addEventListener('click', () => {
+    currentStatFilter = 'all';
+    applyFilters();
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-total').classList.add('active-filter');
+});
+
+document.getElementById('filter-available').addEventListener('click', () => {
+    currentStatFilter = 'available';
+    applyFilters();
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-available').classList.add('active-filter');
+});
+
+document.getElementById('filter-assigned').addEventListener('click', () => {
+    currentStatFilter = 'assigned';
+    applyFilters();
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-assigned').classList.add('active-filter');
+});
+
+document.getElementById('filter-expired').addEventListener('click', () => {
+    currentStatFilter = 'expired';
+    applyFilters();
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-expired').classList.add('active-filter');
+});
 
 document.getElementById('roster-search')?.addEventListener('input', applyFilters);
 
