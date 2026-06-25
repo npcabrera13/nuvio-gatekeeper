@@ -48,9 +48,15 @@ const dashboard     = document.getElementById('dashboard');
 const tbody         = document.getElementById('customers-body');
 const spinner       = document.getElementById('loading-spinner');
 const noCustomers   = document.getElementById('no-customers');
-const statTotal     = document.getElementById('total-users');
-const statActive    = document.getElementById('active-users');
-const statBlocked   = document.getElementById('blocked-users');
+const statTotal     = document.getElementById('stat-total');
+const statAvailable = document.getElementById('stat-available');
+const statAssigned  = document.getElementById('stat-assigned');
+const statBlocked   = document.getElementById('stat-blocked');
+
+const bulkModal     = document.getElementById('bulk-modal');
+const bulkInput     = document.getElementById('bulk-input');
+const bulkDays      = document.getElementById('bulk-days');
+const bulkGenerateBtn = document.getElementById('bulk-generate-btn');
 
 const tokenModal    = document.getElementById('token-modal');
 const modalTitle    = document.getElementById('modal-title');
