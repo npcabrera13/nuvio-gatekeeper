@@ -816,18 +816,22 @@ async function loadData() {
 
             tr.innerHTML = `
                 <td class="cell-customer" data-label="Customer Name">
-                    <div>${safeNameHTML}</div>
-                    ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
+                    <div class="td-content">
+                        <div>${safeNameHTML}</div>
+                        ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
+                    </div>
                 </td>
-                <td data-label="Token"><span class="cell-token">${id}</span></td>
-                <td data-label="Nuvio Email" class="cell-email">${nuvioEmail || '<span style="color:var(--text-muted)">— Not set —</span>'}</td>
-                <td data-label="Nuvio Password">${nuvioPassword || '—'}</td>
-                <td class="cell-assigned" data-label="Assigned To">${assignedBadge}</td>
+                <td data-label="Token"><span class="cell-token td-content">${id}</span></td>
+                <td data-label="Nuvio Email" class="cell-email"><div class="td-content" style="word-break: break-all;">${nuvioEmail || '<span style="color:var(--text-muted)">— Not set —</span>'}</div></td>
+                <td data-label="Nuvio Password"><div class="td-content" style="word-break: break-all;">${nuvioPassword || '—'}</div></td>
+                <td class="cell-assigned" data-label="Assigned To"><div class="td-content">${assignedBadge}</div></td>
                 <td data-label="Expires">
-                    <div>${expiry.text}</div>
-                    ${expiry.daysLabel ? `<div style="font-size:0.8rem;color:var(--text-muted);">${expiry.daysLabel}</div>` : ''}
+                    <div class="td-content">
+                        <div>${expiry.text}</div>
+                        ${expiry.daysLabel ? `<div style="font-size:0.8rem;color:var(--text-muted);">${expiry.daysLabel}</div>` : ''}
+                    </div>
                 </td>
-                <td data-label="Status">${statusBadge}</td>
+                <td data-label="Status"><div class="td-content">${statusBadge}</div></td>
                 <td data-label="Actions">
                     <div class="action-buttons">
                         ${credentialsBtn}
@@ -935,10 +939,10 @@ function applyFilters() {
         if (currentStatFilter === 'expired' && status !== 'blocked' && !expiryText.toLowerCase().includes('expired')) matchesFilter = false;
         
         if (matchesSearch && matchesFilter) {
-            row.style.display = '';
+            row.classList.remove('hidden');
             visibleCount++;
         } else {
-            row.style.display = 'none';
+            row.classList.add('hidden');
         }
     });
     
@@ -953,39 +957,6 @@ function applyFilters() {
     }
 }
 
-// Stat card click filters
-let currentStatFilter = 'all';
-
-document.getElementById('filter-total').addEventListener('click', () => {
-    currentStatFilter = 'all';
-    applyFilters();
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-total').classList.add('active-filter');
-});
-
-document.getElementById('filter-available').addEventListener('click', () => {
-    currentStatFilter = 'available';
-    applyFilters();
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-available').classList.add('active-filter');
-});
-
-document.getElementById('filter-assigned').addEventListener('click', () => {
-    currentStatFilter = 'assigned';
-    applyFilters();
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-assigned').classList.add('active-filter');
-});
-
-document.getElementById('filter-expired').addEventListener('click', () => {
-    currentStatFilter = 'expired';
-    applyFilters();
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-expired').classList.add('active-filter');
-});
-
-document.getElementById('roster-search')?.addEventListener('input', applyFilters);
-
 // Bind filter buttons
 document.querySelectorAll('.btn-filter').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -996,28 +967,66 @@ document.querySelectorAll('.btn-filter').forEach(btn => {
         btn.classList.add('active');
         btn.classList.remove('btn-outline');
         currentFilter = btn.dataset.filter;
+        
+        // Sync the stat card filter back to 'all' when a top filter is clicked
+        currentStatFilter = 'all';
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+        const totalFilterEl = document.getElementById('filter-total');
+        if (totalFilterEl) totalFilterEl.classList.add('active-filter');
+        
         applyFilters();
     });
 });
 
-// Bind clickable stats cards
-function setupStatsFilter(cardId, filterType) {
-    const cardEl = document.getElementById(cardId);
-    if (!cardEl) return;
-    cardEl.addEventListener('click', () => {
-        // Find corresponding filter button and click it
-        const btn = document.querySelector(`.btn-filter[data-filter="${filterType}"]`);
-        if (btn) btn.click();
-        
-        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-        cardEl.classList.add('active-filter');
+// Stat card click filters
+let currentStatFilter = 'all';
+
+function syncTopFilter() {
+    currentFilter = 'all';
+    document.querySelectorAll('.btn-filter').forEach(b => { 
+        b.classList.remove('active'); 
+        b.classList.add('btn-outline'); 
     });
+    const allBtn = document.querySelector('.btn-filter[data-filter="all"]');
+    if (allBtn) {
+        allBtn.classList.add('active');
+        allBtn.classList.remove('btn-outline');
+    }
 }
 
-setupStatsFilter('filter-all', 'all');
-setupStatsFilter('filter-available', 'available');
-setupStatsFilter('filter-assigned', 'assigned');
-setupStatsFilter('filter-blocked', 'blocked');
+document.getElementById('filter-total').addEventListener('click', () => {
+    currentStatFilter = 'all';
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-total').classList.add('active-filter');
+    syncTopFilter();
+    applyFilters();
+});
+
+document.getElementById('filter-available').addEventListener('click', () => {
+    currentStatFilter = 'available';
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-available').classList.add('active-filter');
+    syncTopFilter();
+    applyFilters();
+});
+
+document.getElementById('filter-assigned').addEventListener('click', () => {
+    currentStatFilter = 'assigned';
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-assigned').classList.add('active-filter');
+    syncTopFilter();
+    applyFilters();
+});
+
+document.getElementById('filter-expired').addEventListener('click', () => {
+    currentStatFilter = 'expired';
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('filter-expired').classList.add('active-filter');
+    syncTopFilter();
+    applyFilters();
+});
+
+document.getElementById('roster-search')?.addEventListener('input', applyFilters);
 
 document.getElementById('refresh-data-btn')?.addEventListener('click', () => {
     loadData();

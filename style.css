@@ -849,12 +849,27 @@ tr:hover td {
     transform: translateX(-50%);
     border: 4px solid transparent;
     border-top-color: rgba(0, 0, 0, 0.85);
+    z-index: 100;
+    pointer-events: none;
     opacity: 0;
     animation: fadeInTooltip 0.2s ease forwards;
     animation-delay: 0.3s;
 }
+
+/* Force right-alignment for action buttons so they never clip off the right edge of the screen */
+.action-buttons .btn-icon[data-tip]::after {
+    left: auto;
+    right: 0;
+    transform: translateY(-8px);
+}
+.action-buttons .btn-icon[data-tip]::before {
+    left: auto;
+    right: 14px;
+    transform: none;
+}
+
 @keyframes fadeInTooltip {
-    to { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+    to { opacity: 1; margin-bottom: 4px; }
 }
 
 .input-group {
@@ -877,20 +892,27 @@ tr:hover td {
         grid-template-columns: 1fr !important;
     }
     
+    /* Filter bar: wrap buttons */
+    .filter-bar {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        padding: 12px !important;
+    }
+    
     /* Responsive stacked card table for mobile */
     .table-container {
         padding: 1rem;
     }
     .table-responsive {
         width: 100%;
-        overflow-x: visible;
+        overflow-x: visible !important;
     }
     table, tbody, tr, td {
-        display: block;
-        width: 100%;
+        display: block !important;
+        width: 100% !important;
     }
     thead {
-        display: none;
+        display: none !important;
     }
     tr {
         background: rgba(255, 255, 255, 0.015);
@@ -901,7 +923,7 @@ tr:hover td {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
     td {
-        display: flex;
+        display: flex !important;
         justify-content: space-between;
         align-items: center;
         padding: 0.65rem 0.25rem !important;
@@ -910,7 +932,7 @@ tr:hover td {
     }
     td:last-child {
         border-bottom: none !important;
-        justify-content: flex-end;
+        flex-wrap: wrap;
     }
     td::before {
         content: attr(data-label);
@@ -919,6 +941,7 @@ tr:hover td {
         font-size: 0.85rem;
         text-align: left;
         padding-right: 1rem;
+        flex-shrink: 0;
     }
     td.cell-customer {
         flex-direction: column;
@@ -928,6 +951,42 @@ tr:hover td {
     }
     td.cell-customer::before {
         display: none;
+    }
+    
+    /* Prevent long text from blowing out card width */
+    .td-content {
+        min-width: 0;
+        max-width: 65%;
+        text-align: right;
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+    
+    /* Action buttons: bigger tap targets, allow wrapping */
+    .action-buttons {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        justify-content: flex-end !important;
+    }
+    
+    .action-buttons .btn-icon {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+    }
+    
+    /* Fix tooltips getting chopped on the right edge of mobile screens */
+    .action-buttons .btn-icon[data-tip]::after {
+        left: auto !important;
+        right: 0 !important;
+        transform: translateY(-8px) !important;
+    }
+    .action-buttons .btn-icon[data-tip]::before {
+        left: auto !important;
+        right: 14px !important;
+        transform: none !important;
     }
     
     /* Full width modals */
@@ -1016,7 +1075,7 @@ tr:hover td {
 
 /* Table: no horizontal scroll ever */
 .table-responsive {
-    overflow-x: hidden;
+    overflow-x: visible;
     width: 100%;
 }
 
@@ -1026,61 +1085,12 @@ tr:hover td {
     word-wrap: break-word;
 }
 
-/* On mobile: convert table to stacked cards */
-@media (max-width: 768px) {
-    .table-responsive {
-        overflow-x: hidden !important;
-    }
-    
-    #customers-table thead {
-        display: none !important;
-    }
-    
-    #customers-table,
-    #customers-table tbody,
-    #customers-table tr,
-    #customers-table td {
-        display: block !important;
-        width: 100% !important;
-    }
-    
-    #customers-table tr {
-        margin-bottom: 1rem !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
-        border-radius: 12px !important;
-        padding: 0.5rem !important;
-        background: rgba(255,255,255,0.02) !important;
-    }
-    
-    #customers-table td {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        padding: 0.6rem 0.75rem !important;
-        border-bottom: 1px solid rgba(255,255,255,0.04) !important;
-        text-align: right !important;
-    }
-    
-    #customers-table td:last-child {
-        border-bottom: none !important;
-    }
-    
-    #customers-table td::before {
-        content: attr(data-label) !important;
-        font-weight: 600 !important;
-        font-size: 0.75rem !important;
-        color: var(--text-muted) !important;
-        text-align: left !important;
-        padding-right: 1rem !important;
-    }
-    
-    .action-buttons {
-        flex-wrap: wrap !important;
-        gap: 0.5rem !important;
-    }
-    
-    .action-buttons .btn-icon {
-        width: 40px !important;
-        height: 40px !important;
-    }
+#customers-table th:last-child {
+    width: 250px;
 }
+
+#customers-table td:last-child {
+    white-space: nowrap;
+}
+
+
