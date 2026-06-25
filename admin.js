@@ -65,7 +65,7 @@ const modalName     = document.getElementById('modal-name');
 const modalNotes    = document.getElementById('modal-notes');
 const modalNuvioEmail = document.getElementById('modal-nuvio-email');
 const modalNuvioPassword = document.getElementById('modal-nuvio-password');
-const filterUnassignedOnly = document.getElementById('filter-unassigned-only');
+
 const modalTokenKey = document.getElementById('modal-token-key');
 const tokenKeyGroup = document.getElementById('token-key-group');
 const modalDays     = document.getElementById('modal-days');
@@ -102,7 +102,7 @@ document.querySelectorAll('.close-modal').forEach(btn => {
 
 document.getElementById('open-bulk-modal').addEventListener('click', () => {
     bulkInput.value = '';
-    bulkDays.value = '30';
+    bulkDays.value = '7';
     bulkModal.classList.remove('hidden');
 });
 
@@ -113,7 +113,7 @@ document.getElementById('open-create-modal').addEventListener('click', () => {
     modalNotes.value = '';
     modalNuvioEmail.value = '';
     modalNuvioPassword.value = '';
-    modalDays.value = '30';
+    modalDays.value = '7';
     modalTokenKey.value = '';
     tokenKeyGroup.classList.add('hidden');
     daysGroup.classList.remove('hidden');
@@ -314,7 +314,7 @@ bulkGenerateBtn.addEventListener('click', async () => {
     if (isNaN(days) || days < 1) return showToast('❌ Invalid days.');
     
     bulkGenerateBtn.disabled = true;
-    bulkGenerateBtn.textContent = "Generating...";
+    bulkGenerateBtn.textContent = `Creating 0/${lines.length}...`;
     
     let successCount = 0;
     let failCount = 0;
@@ -343,6 +343,7 @@ bulkGenerateBtn.addEventListener('click', async () => {
                 assignedTo: null
             });
             successCount++;
+            bulkGenerateBtn.textContent = `Creating ${successCount}/${lines.length}...`;
         } catch (err) {
             console.error("Bulk error:", err);
             failCount++;
@@ -369,32 +370,46 @@ window.openRenewModal = (id, name, currentMs) => {
     pendingRenewId = id;
     pendingRenewCurrentExpiry = currentMs;
     renewCustomerName.textContent = name;
-    renewDays.value = '30';
+    renewDays.value = '7';
+    // Clear exact date input
+    const exactDateInput = document.getElementById('renew-exact-date');
+    if (exactDateInput) exactDateInput.value = '';
     renewModal.classList.remove('hidden');
 };
 
 confirmRenewBtn.addEventListener('click', async () => {
-    const days = parseInt(renewDays.value, 10);
-    if (isNaN(days) || days < 1) return alert("Invalid days");
+    const exactDateInput = document.getElementById('renew-exact-date');
+    const exactDate = exactDateInput ? exactDateInput.value : '';
+    let newExpiry;
     
-    confirmRenewBtn.disabled = true;
-    
-    try {
+    if (exactDate) {
+        // Option 2: Set exact date
+        newExpiry = new Date(exactDate);
+    } else {
+        // Option 1: Add days
+        const days = parseInt(renewDays.value, 10);
+        if (isNaN(days) || days < 1) return alert("Invalid days");
+        
         let baseDate = pendingRenewCurrentExpiry ? new Date(pendingRenewCurrentExpiry) : new Date();
         if (baseDate.getTime() < Date.now()) baseDate = new Date(); // If expired, start from today
         
         baseDate.setDate(baseDate.getDate() + days);
-        
+        newExpiry = baseDate;
+    }
+    
+    confirmRenewBtn.disabled = true;
+    
+    try {
         await updateDoc(doc(db, 'customers', pendingRenewId), {
-            expiresAt: baseDate,
+            expiresAt: newExpiry,
             status: 'active'
         });
-        showToast(`✅ Added ${days} days.`);
+        showToast(exactDate ? '✅ Expiry date set.' : `✅ Added ${renewDays.value} days.`);
         renewModal.classList.add('hidden');
         loadData();
     } catch (e) {
         console.error(e);
-        showToast('❌ Failed to renew.');
+        showToast('❌ Failed to update expiry.');
     }
     
     confirmRenewBtn.disabled = false;

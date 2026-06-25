@@ -109,9 +109,7 @@
                 <div class="roster-header">
                     <h2>Customer Roster</h2>
                     <div class="roster-actions">
-                        <label style="display:inline-flex; align-items:center; margin-right:1rem; font-size:0.85rem; color:var(--text-secondary); cursor:pointer;">
-                            <input type="checkbox" id="filter-unassigned-only" style="margin-right: 0.4rem;"> Show available only
-                        </label>
+
                         <div class="input-group" style="margin-right: 1rem; display: inline-flex;">
                             <span class="input-icon"><i class="fas fa-search"></i></span>
                             <input type="text" id="roster-search" class="form-input" placeholder="Search tokens or names..." style="width: 250px; padding-left: 2.2rem; height: 34px; font-size: 0.85rem;">
@@ -189,8 +187,8 @@
                 </div>
                 
                 <div class="form-group" id="days-group">
-                    <label>Duration (Days)</label>
-                    <input type="number" id="modal-days" class="form-input" placeholder="30" value="30" min="1">
+                    <label>Duration (Days) — use 7 for free trials</label>
+                    <input type="number" id="modal-days" class="form-input" placeholder="7" value="7" min="1">
                 </div>
 
 
@@ -215,8 +213,8 @@
                     <textarea id="bulk-input" class="form-input" rows="8" placeholder="email1@gmail.com,pass1&#10;email2@gmail.com,pass2" style="font-family: monospace; resize: vertical;"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Duration (Days)</label>
-                    <input type="number" id="bulk-days" class="form-input" value="30" min="1">
+                    <label>Duration (Days) — use 7 for free trials</label>
+                    <input type="number" id="bulk-days" class="form-input" value="7" min="1">
                 </div>
             </div>
             <div class="modal-footer">
@@ -226,20 +224,29 @@
         </div>
     </div>
     
-    <!-- Renew Modal -->
+    <!-- Renew / Edit Expiry Modal -->
     <div id="renew-modal" class="overlay hidden">
         <div class="modal-card premium-glass">
             <div class="modal-header">
-                <h3>Renew Token</h3>
+                <h3>Edit Expiry — <span id="renew-customer-name"></span></h3>
                 <button class="btn-icon close-modal" data-target="renew-modal">×</button>
             </div>
             <div class="modal-body">
-                <p>How many days to add to <strong id="renew-customer-name"></strong>?</p>
-                <input type="number" id="renew-days" class="form-input" value="30" min="1" style="width: 100%;">
+                <div class="form-group">
+                    <label>Option 1: Add Days</label>
+                    <input type="number" id="renew-days" class="form-input" value="7" min="1">
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">Adds days to current expiry (or from today if expired)</p>
+                </div>
+                <div class="form-divider" style="margin: 1rem 0; border-top: 1px solid rgba(255,255,255,0.08);"></div>
+                <div class="form-group">
+                    <label>Option 2: Set Exact Expiry Date</label>
+                    <input type="datetime-local" id="renew-exact-date" class="form-input">
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">If set, this overrides "Add Days" above</p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost close-modal" data-target="renew-modal">Cancel</button>
-                <button id="confirm-renew-btn" class="btn btn-glow">Confirm Renewal</button>
+                <button id="confirm-renew-btn" class="btn btn-glow">Confirm</button>
             </div>
         </div>
     </div>
