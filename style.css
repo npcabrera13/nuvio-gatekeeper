@@ -1028,59 +1028,59 @@ tr:hover td {
 
 /* On mobile: convert table to stacked cards */
 @media (max-width: 768px) {
-    #customers-table thead {
-        display: none;
+    .table-responsive {
+        overflow-x: hidden !important;
     }
     
-    #customers-table, 
-    #customers-table tbody, 
-    #customers-table tr, 
+    #customers-table thead {
+        display: none !important;
+    }
+    
+    #customers-table,
+    #customers-table tbody,
+    #customers-table tr,
     #customers-table td {
-        display: block;
-        width: 100%;
+        display: block !important;
+        width: 100% !important;
     }
     
     #customers-table tr {
-        margin-bottom: 1rem;
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 12px;
-        padding: 0.5rem;
-        background: rgba(255,255,255,0.02);
+        margin-bottom: 1rem !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 12px !important;
+        padding: 0.5rem !important;
+        background: rgba(255,255,255,0.02) !important;
     }
     
     #customers-table td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0.75rem;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
-        text-align: right;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 0.6rem 0.75rem !important;
+        border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+        text-align: right !important;
     }
     
     #customers-table td:last-child {
-        border-bottom: none;
-        flex-direction: column;
-        align-items: flex-start;
+        border-bottom: none !important;
     }
     
     #customers-table td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        text-align: left;
-        padding-right: 1rem;
-    }
-    
-    #customers-table td:last-child::before {
-        width: 100%;
-        margin-bottom: 0.5rem;
+        content: attr(data-label) !important;
+        font-weight: 600 !important;
+        font-size: 0.75rem !important;
+        color: var(--text-muted) !important;
+        text-align: left !important;
+        padding-right: 1rem !important;
     }
     
     .action-buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        width: 100%;
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+    
+    .action-buttons .btn-icon {
+        width: 40px !important;
+        height: 40px !important;
     }
 }
