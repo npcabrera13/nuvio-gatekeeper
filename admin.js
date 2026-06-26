@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Configuration ──────────────────────────────────────────────────────────
-const ADMIN_PASSWORD_HASH = "83f41b253eebe749bd32512d0985d2562207126cf1c10b1f8dabac552ed7f061";
+const ADMIN_PASSWORD_HASH = "7f5741fbd93481f422aa5d0373c8b1c0bce7d4b9fa900bc40ac8fc624011e98d";
 
 async function hashStr(str) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
