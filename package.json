@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "description": "Secure reverse-proxy gatekeeper for Nuvio/Stremio streaming via Torrentio",
   "private": true,
+  "scripts": {
+    "deploy": "node -e \"fetch('https://api.vercel.com/v1/integrations/deploy/prj_d5NhkFhdykack6tRUyAKi9dcGZEA/QgplBJ8JXD', { method: 'POST' }).then(r => r.json().then(b => ({ status: r.status, body: b }))).then(r => { if (r.status >= 400) { console.error('Deploy FAILED:', r.status, JSON.stringify(r.body)); process.exit(1); } else { console.log('Deployment triggered:', JSON.stringify(r.body)); } }).catch(e => { console.error('Deploy error:', e.message); process.exit(1); })\""
+  },
   "dependencies": {
     "express": "^5.2.1",
-    "firebase": "^10.12.0"
+    "firebase": "^10.12.0",
+    "puppeteer-core": "^25.1.0"
   }
 }

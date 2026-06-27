@@ -6,12 +6,29 @@
     { "source": "/catalog/:path*", "destination": "/api/proxy?prefix=catalog&p=:path*" },
     { "source": "/stream/:path*",  "destination": "/api/proxy?prefix=stream&p=:path*" },
     { "source": "/meta/:path*",    "destination": "/api/proxy?prefix=meta&p=:path*" },
+
     { "source": "/:token/manifest.json",  "destination": "/api/proxy?token=:token&prefix=manifest.json" },
     { "source": "/:token/catalog/:path*", "destination": "/api/proxy?token=:token&prefix=catalog&p=:path*" },
     { "source": "/:token/stream/:path*",  "destination": "/api/proxy?token=:token&prefix=stream&p=:path*" },
-    { "source": "/:token/meta/:path*",    "destination": "/api/proxy?token=:token&prefix=meta&p=:path*" }
+    { "source": "/:token/meta/:path*",    "destination": "/api/proxy?token=:token&prefix=meta&p=:path*" },
+    { "source": "/:token/subtitles/:path*", "destination": "/api/proxy?token=:token&prefix=subtitles&p=:path*" },
+
+    { "source": "/:token/:addon/manifest.json",  "destination": "/api/proxy?token=:token&addon=:addon&prefix=manifest.json" },
+    { "source": "/:token/:addon/catalog/:path*", "destination": "/api/proxy?token=:token&addon=:addon&prefix=catalog&p=:path*" },
+    { "source": "/:token/:addon/stream/:path*",  "destination": "/api/proxy?token=:token&addon=:addon&prefix=stream&p=:path*" },
+    { "source": "/:token/:addon/meta/:path*",    "destination": "/api/proxy?token=:token&addon=:addon&prefix=meta&p=:path*" },
+    { "source": "/:token/:addon/subtitles/:path*", "destination": "/api/proxy?token=:token&addon=:addon&prefix=subtitles&p=:path*" }
   ],
   "headers": [
+    {
+      "source": "/(.*)manifest.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
