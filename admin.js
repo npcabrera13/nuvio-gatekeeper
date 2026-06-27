@@ -472,8 +472,9 @@ window.toggleStatus = async (id, currentStatus) => {
 window.unassignToken = async (id) => {
     if (!confirm(`Are you sure you want to unassign this token?\n\nThis will make it available to be auto-assigned to the next customer.`)) return;
     try {
-        await updateDoc(doc(db, "customers", id), { assignedTo: null });
-        showToast(`✅ Token unassigned.`);
+        // Clear BOTH assignedTo AND name so the token is fully recycled
+        await updateDoc(doc(db, "customers", id), { assignedTo: null, name: '' });
+        showToast(`✅ Token unassigned and available.`);
         loadData();
     } catch (e) {
         console.error(e);
@@ -764,12 +765,13 @@ async function loadData() {
             const isExpired  = expiry.isExpired;
             const isInactive = isBlocked || isExpired;
 
-            // Calculate stats
+            // Calculate stats — treat null AND empty-string assignedTo as "not assigned"
+            const isAssigned = assignedTo !== null && assignedTo !== '';
             if (isInactive) {
                 blockedOrExpiredCount++;
-            } else if (assignedTo !== null) {
+            } else if (isAssigned) {
                 assignedCount++;
-            } else if (assignedTo === null && nuvioEmail !== '') {
+            } else if (!isAssigned && nuvioEmail !== '') {
                 availableCount++;
             } else {
                 // unconfigured
@@ -784,10 +786,21 @@ async function loadData() {
             let unassignBtn = '';
             let credentialsBtn = '';
             
-            if (assignedTo === null) {
+            if (assignedTo === null || assignedTo === '') {
                 assignedBadge = `<span class="status-badge status-active" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">🟢 Available</span>`;
             } else {
-                assignedBadge = `<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">🔴 Assigned: ${String(assignedTo).substring(0, 8)}</span>`;
+                // Show the FULL email (not truncated) so the admin can actually
+                // see who has the account. Add a copy button for quick support.
+                const safeAssigned = String(assignedTo).replace(/'/g, "\\'");
+                assignedBadge = `
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">🔴 Assigned</span>
+                        <span style="font-size:0.8rem;color:var(--text-muted);word-break:break-all;max-width:180px;">${String(assignedTo).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]))}</span>
+                        <button class="btn-icon" data-tip="Copy customer email" onclick="navigator.clipboard.writeText('${safeAssigned}');this.innerHTML='✓';setTimeout(()=>this.innerHTML='<svg width=14 height=14 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'9\' y=\'9\' width=\'13\' height=\'13\' rx=\'2\' ry=\'2\'></rect><path d=\'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\'></path></svg>',1500)" style="padding:2px;min-width:auto;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                    </div>
+                `;
                 unassignBtn = `
                     <button class="btn-icon" data-tip="Unassign" onclick="window.unassignToken('${id}')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
@@ -807,7 +820,7 @@ async function loadData() {
 
             const tr = document.createElement('tr');
             tr.dataset.status = isInactive ? 'blocked' : 'active';
-            tr.dataset.assigned = assignedTo === null ? 'null' : 'assigned';
+            tr.dataset.assigned = (!assignedTo || assignedTo === '') ? 'null' : 'assigned';
             tr.dataset.configured = nuvioEmail === '' ? 'unconfigured' : 'configured';
             
             const safeNameHTML = String(name).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
@@ -817,7 +830,7 @@ async function loadData() {
             tr.innerHTML = `
                 <td class="cell-customer" data-label="Customer Name">
                     <div class="td-content">
-                        <div>${safeNameHTML}</div>
+                        <div>${(!assignedTo || assignedTo === '') ? '<span style="color:var(--text-muted)">— Not assigned —</span>' : safeNameHTML}</div>
                         ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
                     </div>
                 </td>
