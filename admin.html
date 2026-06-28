@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuvio Admin</title>
-    <link rel="stylesheet" href="style.css?v=20">
+    <link rel="stylesheet" href="style.css?v=21">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="https://i.ibb.co/J91qPG0/Logo-1080x1080.png">
 </head>
@@ -271,20 +271,27 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="renew-id">
-                <p class="modal-hint" id="renew-info"></p>
-                <div class="renew-quick">
-                    <button class="renew-btn" data-days="7">+7 days</button>
-                    <button class="renew-btn" data-days="30">+30 days</button>
-                    <button class="renew-btn" data-days="90">+90 days</button>
-                </div>
+                <div class="renew-info-box" id="renew-info"></div>
+
                 <div class="form-group">
-                    <label>Or set exact days from now:</label>
-                    <input type="number" id="renew-days" class="form-input" placeholder="30" min="1">
+                    <label>Days</label>
+                    <input type="number" id="renew-days" class="form-input" value="7" min="1">
+                </div>
+
+                <div class="renew-actions">
+                    <button id="renew-add-btn" class="btn btn-primary">Add Days</button>
+                    <button id="renew-remove-btn" class="btn btn-ghost">Remove Days</button>
+                </div>
+
+                <div class="renew-divider">OR quick set:</div>
+                <div class="renew-quick">
+                    <button class="renew-btn" data-days="7">7 days</button>
+                    <button class="renew-btn" data-days="30">30 days</button>
+                    <button class="renew-btn" data-days="90">90 days</button>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('renew-modal')">Cancel</button>
-                <button id="renew-submit" class="btn btn-primary">Apply</button>
+                <button class="btn btn-ghost" onclick="closeModal('renew-modal')">Close</button>
             </div>
         </div>
     </div>
@@ -292,6 +299,6 @@
     <!-- Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script type="module" src="admin.js?v=20"></script>
+    <script type="module" src="admin.js?v=21"></script>
 </body>
 </html>

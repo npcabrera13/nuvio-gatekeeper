@@ -222,7 +222,6 @@ function renderDesktopTable(tokens) {
             <td><span class="badge ${s.badgeClass}">${s.badgeText}</span></td>
             <td>
                 <div class="action-btns">
-                    ${t.nuvioEmail && t.nuvioPassword ? `<button class="icon-btn" title="Copy creds" onclick="copyCreds('${escapeJs(t.nuvioEmail)}','${escapeJs(t.nuvioPassword)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>` : ''}
                     <button class="icon-btn" title="Copy link" onclick="copyLink('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
                     <button class="icon-btn" title="Edit" onclick="openEdit('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     <button class="icon-btn" title="Renew" onclick="openRenew('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
@@ -254,7 +253,6 @@ function renderMobileCards(tokens) {
             ${s.isAssigned ? `<div class="token-card-row"><span class="token-card-label">Assigned To</span><span class="token-card-value">${escapeHtml(s.assignedTo)}</span></div>` : ''}
             <div class="token-card-row"><span class="token-card-label">Expires</span><span class="token-card-value">${s.expiry.text}<br><span style="font-size:11px;color:var(--text-dim)">${s.expiry.daysLabel}</span></span></div>
             <div class="token-card-actions">
-                ${t.nuvioEmail && t.nuvioPassword ? `<button class="btn btn-ghost" onclick="copyCreds('${escapeJs(t.nuvioEmail)}','${escapeJs(t.nuvioPassword)}')">Copy Creds</button>` : ''}
                 <button class="btn btn-ghost" onclick="copyLink('${escapeJs(t.id)}')">Copy Link</button>
                 <button class="btn btn-ghost" onclick="openEdit('${escapeJs(t.id)}')">Edit</button>
                 <button class="btn btn-ghost" onclick="openRenew('${escapeJs(t.id)}')">Renew</button>
@@ -290,8 +288,11 @@ window.openRenew = (id) => {
     if (!t) return;
     document.getElementById('renew-id').value = id;
     const s = getTokenStatus(t);
-    document.getElementById('renew-info').textContent = `Current: ${s.expiry.text} (${s.expiry.daysLabel || 'no expiry'})`;
-    document.getElementById('renew-days').value = '';
+    document.getElementById('renew-info').innerHTML = `
+        <div style="margin-bottom:6px"><strong>Current expiry:</strong> ${s.expiry.text}</div>
+        <div style="color:${s.isExpired ? 'var(--red)' : 'var(--green)'}">${s.expiry.daysLabel || 'No expiry'}</div>
+    `;
+    document.getElementById('renew-days').value = '7';
     openModal('renew-modal');
 };
 window.unassign = async (id) => {
@@ -398,21 +399,58 @@ document.getElementById('edit-submit').addEventListener('click', async () => {
     } catch { showToast('Failed'); }
 });
 
-// ── Renew ──
-document.querySelectorAll('.renew-btn').forEach(btn => {
-    btn.addEventListener('click', () => { document.getElementById('renew-days').value = btn.dataset.days; });
-});
-document.getElementById('renew-submit').addEventListener('click', async () => {
+// ── Renew: Add / Remove / Quick Set ──
+document.getElementById('renew-add-btn').addEventListener('click', async () => {
     const id = document.getElementById('renew-id').value;
     const days = parseInt(document.getElementById('renew-days').value);
     if (!days || days < 1) { showToast('Enter valid days'); return; }
-    const newExpiry = new Date(Date.now() + days * 86400000);
+    const t = allTokens.find(x => x.id === id);
+    if (!t) return;
+    const s = getTokenStatus(t);
+    // Add to current expiry (or from now if expired)
+    const base = s.expiry.timestamp && !s.isExpired ? new Date(s.expiry.timestamp) : new Date();
+    const newExpiry = new Date(base.getTime() + days * 86400000);
     try {
         await updateDoc(doc(db, "customers", id), { expiresAt: Timestamp.fromDate(newExpiry), status: 'active' });
-        showToast(`Renewed ${days} days`);
+        showToast(`Added ${days} days`);
         closeModal('renew-modal');
         loadTokens();
     } catch { showToast('Failed'); }
+});
+
+document.getElementById('renew-remove-btn').addEventListener('click', async () => {
+    const id = document.getElementById('renew-id').value;
+    const days = parseInt(document.getElementById('renew-days').value);
+    if (!days || days < 1) { showToast('Enter valid days'); return; }
+    const t = allTokens.find(x => x.id === id);
+    if (!t) return;
+    const s = getTokenStatus(t);
+    // Remove from current expiry (or from now if no expiry)
+    const base = s.expiry.timestamp ? new Date(s.expiry.timestamp) : new Date();
+    let newExpiry = new Date(base.getTime() - days * 86400000);
+    // Don't allow setting before now
+    if (newExpiry.getTime() < Date.now()) newExpiry = new Date();
+    try {
+        await updateDoc(doc(db, "customers", id), { expiresAt: Timestamp.fromDate(newExpiry) });
+        showToast(`Removed ${days} days`);
+        closeModal('renew-modal');
+        loadTokens();
+    } catch { showToast('Failed'); }
+});
+
+// Quick set (overwrite to exactly N days from now)
+document.querySelectorAll('.renew-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = document.getElementById('renew-id').value;
+        const days = parseInt(btn.dataset.days);
+        const newExpiry = new Date(Date.now() + days * 86400000);
+        try {
+            await updateDoc(doc(db, "customers", id), { expiresAt: Timestamp.fromDate(newExpiry), status: 'active' });
+            showToast(`Set to ${days} days`);
+            closeModal('renew-modal');
+            loadTokens();
+        } catch { showToast('Failed'); }
+    });
 });
 
 // ── Export ──
