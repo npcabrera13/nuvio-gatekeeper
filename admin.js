@@ -449,9 +449,12 @@ document.getElementById('password-input').addEventListener('keydown', (e) => {
 // ── Init ──
 (async () => {
     const saved = localStorage.getItem('nuvio_auth');
-    if (saved === ADMIN_PASSWORD_HASH) {
+    if (saved && saved === ADMIN_PASSWORD_HASH) {
+        // Already authenticated — show app directly
         showApp();
     } else {
+        // Clear any stale auth and show login
+        if (saved) localStorage.removeItem('nuvio_auth');
         document.getElementById('login-overlay').classList.remove('hidden');
         document.getElementById('password-input').focus();
     }
