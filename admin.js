@@ -157,6 +157,7 @@ async function loadTokens() {
 // ── Stats ──
 function updateStats() {
     let available = 0, assigned = 0, blocked = 0, expired = 0, unconfigured = 0;
+    let expiringSoon = 0;
     allTokens.forEach(t => {
         const s = getTokenStatus(t);
         if (s.isAvailable) available++;
@@ -164,6 +165,11 @@ function updateStats() {
         if (s.isBlocked) blocked++;
         if (s.isExpired && !s.isBlocked) expired++;
         if (s.isUnconfigured) unconfigured++;
+        // Expiring soon = within 7 days
+        if (s.expiry.timestamp && !s.isExpired) {
+            const daysLeft = Math.floor((s.expiry.timestamp - Date.now()) / 86400000);
+            if (daysLeft <= 7) expiringSoon++;
+        }
     });
     document.getElementById('stat-total').textContent = allTokens.length;
     document.getElementById('stat-available').textContent = available;
@@ -171,6 +177,17 @@ function updateStats() {
     document.getElementById('stat-blocked').textContent = blocked;
     document.getElementById('stat-expired').textContent = expired;
     document.getElementById('stat-unconfigured').textContent = unconfigured;
+
+    // Analytics (computed, 0 extra reads)
+    const total = allTokens.length || 1; // avoid divide by zero
+    const pctAssigned = Math.round((assigned / total) * 100);
+    const pctAvailable = Math.round((available / total) * 100);
+    document.getElementById('pct-assigned').textContent = pctAssigned + '%';
+    document.getElementById('bar-assigned').style.width = pctAssigned + '%';
+    document.getElementById('pct-available').textContent = pctAvailable + '%';
+    document.getElementById('bar-available').style.width = pctAvailable + '%';
+    document.getElementById('cnt-expiring').textContent = expiringSoon;
+    document.getElementById('bar-expiring').style.width = Math.round((expiringSoon / total) * 100) + '%';
 }
 
 // ── Filter ──
@@ -259,12 +276,15 @@ function renderMobileCards(tokens) {
             ${s.isAssigned ? `<div class="token-card-row"><span class="token-card-label">Assigned To</span><span class="token-card-value">${escapeHtml(s.assignedTo)}</span></div>` : ''}
             <div class="token-card-row"><span class="token-card-label">Expires</span><span class="token-card-value">${s.expiry.text}<br><span style="font-size:11px;color:var(--text-dim)">${s.expiry.daysLabel}</span></span></div>
             <div class="token-card-actions">
-                <button class="btn btn-ghost" onclick="copyLink('${escapeJs(t.id)}')">Copy Link</button>
                 <button class="btn btn-ghost" onclick="openEdit('${escapeJs(t.id)}')">Edit</button>
                 <button class="btn btn-ghost" onclick="openRenew('${escapeJs(t.id)}')">Renew</button>
-                ${s.isAssigned ? `<button class="btn btn-ghost" onclick="confirmUnassign('${escapeJs(t.id)}')">Unassign</button>` : `<button class="btn btn-ghost" onclick="openAssign('${escapeJs(t.id)}')">Assign</button>`}
-                <button class="btn btn-ghost" onclick="confirmBlock('${escapeJs(t.id)}','${escapeJs(s.status)}')">${s.isBlocked ? 'Unblock' : 'Block'}</button>
-                <button class="btn btn-danger" onclick="confirmDelete('${escapeJs(t.id)}')">Delete</button>
+                <button class="btn btn-ghost" onclick="toggleCardMenu('${escapeJs(t.id)}')">More</button>
+            </div>
+            <div class="card-menu hidden" id="cmenu-${escapeJs(t.id)}">
+                <button onclick="copyLink('${escapeJs(t.id)}')">Copy Link</button>
+                ${s.isAssigned ? `<button onclick="confirmUnassign('${escapeJs(t.id)}')">Unassign</button>` : `<button onclick="openAssign('${escapeJs(t.id)}')">Assign to User</button>`}
+                <button onclick="confirmBlock('${escapeJs(t.id)}','${escapeJs(s.status)}')">${s.isBlocked ? 'Unblock' : 'Block'}</button>
+                <button class="danger" onclick="confirmDelete('${escapeJs(t.id)}')">Delete</button>
             </div>
         </div>`;
     }).join('');
@@ -273,15 +293,21 @@ function renderMobileCards(tokens) {
 // ── Row menu toggle (desktop) ──
 window.toggleRowMenu = (id) => {
     const menu = document.getElementById(`menu-${id}`);
-    // Close all other menus
     document.querySelectorAll('.row-menu').forEach(m => { if (m.id !== `menu-${id}`) m.classList.add('hidden'); });
+    menu.classList.toggle('hidden');
+};
+
+// ── Card menu toggle (mobile) ──
+window.toggleCardMenu = (id) => {
+    const menu = document.getElementById(`cmenu-${id}`);
+    document.querySelectorAll('.card-menu').forEach(m => { if (m.id !== `cmenu-${id}`) m.classList.add('hidden'); });
     menu.classList.toggle('hidden');
 };
 
 // Close menus when clicking outside
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.action-btns') && !e.target.closest('.row-menu')) {
-        document.querySelectorAll('.row-menu').forEach(m => m.classList.add('hidden'));
+    if (!e.target.closest('.action-btns') && !e.target.closest('.row-menu') && !e.target.closest('.token-card-actions') && !e.target.closest('.card-menu')) {
+        document.querySelectorAll('.row-menu, .card-menu').forEach(m => m.classList.add('hidden'));
     }
 });
 

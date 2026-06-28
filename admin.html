@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuvio Admin</title>
-    <link rel="stylesheet" href="style.css?v=23">
+    <link rel="stylesheet" href="style.css?v=24">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="https://i.ibb.co/J91qPG0/Logo-1080x1080.png">
 </head>
@@ -105,6 +105,25 @@
                         <span class="stat-value" id="stat-unconfigured">0</span>
                         <span class="stat-label">Unconfigured</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Analytics (computed from loaded data, 0 extra reads) -->
+            <div class="analytics-section" id="analytics-section">
+                <div class="analytics-card">
+                    <div class="analytics-label">Assigned Rate</div>
+                    <div class="analytics-bar"><div class="analytics-fill" id="bar-assigned" style="width:0%"></div></div>
+                    <div class="analytics-value" id="pct-assigned">0%</div>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-label">Available Rate</div>
+                    <div class="analytics-bar"><div class="analytics-fill green" id="bar-available" style="width:0%"></div></div>
+                    <div class="analytics-value" id="pct-available">0%</div>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-label">Expiring Soon (7d)</div>
+                    <div class="analytics-bar"><div class="analytics-fill amber" id="bar-expiring" style="width:0%"></div></div>
+                    <div class="analytics-value" id="cnt-expiring">0</div>
                 </div>
             </div>
 
@@ -337,6 +356,6 @@
     <!-- Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script type="module" src="admin.js?v=23"></script>
+    <script type="module" src="admin.js?v=24"></script>
 </body>
 </html>
