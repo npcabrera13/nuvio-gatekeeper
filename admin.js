@@ -509,6 +509,53 @@ document.getElementById('assign-submit').addEventListener('click', async () => {
     const id = document.getElementById('assign-id').value;
     const email = document.getElementById('assign-email').value.trim().toLowerCase();
     if (!email) { showToast('Enter customer email'); return; }
+
+    // Check if this email is already assigned to ANOTHER token
+    const existingToken = allTokens.find(t =>
+        t.id !== id &&
+        (t.assignedTo || '').toLowerCase() === email &&
+        t.assignedTo && t.assignedTo.trim() !== ''
+    );
+
+    if (existingToken) {
+        // Show reassignment confirmation
+        const oldExpiry = getExpiryInfo(existingToken.expiresAt);
+        const daysLeft = oldExpiry.timestamp ? Math.max(0, Math.floor((oldExpiry.timestamp - Date.now()) / 86400000)) : 0;
+        closeModal('assign-modal');
+        showConfirm(
+            'Reassign Account?',
+            `${email} is currently assigned to ${existingToken.id} (${daysLeft} days left). Reassigning will move ${daysLeft} days to this token and unassign the old one. Continue?`,
+            async () => {
+                try {
+                    // 1. Copy expiry from old token to new token
+                    if (existingToken.expiresAt) {
+                        await updateDoc(doc(db, "customers", id), {
+                            assignedTo: email,
+                            name: email,
+                            status: 'active',
+                            expiresAt: existingToken.expiresAt
+                        });
+                    } else {
+                        await updateDoc(doc(db, "customers", id), {
+                            assignedTo: email,
+                            name: email,
+                            status: 'active'
+                        });
+                    }
+                    // 2. Unassign the old token
+                    await updateDoc(doc(db, "customers", existingToken.id), {
+                        assignedTo: null,
+                        name: ''
+                    });
+                    showToast(`Reassigned from ${existingToken.id} (${daysLeft} days inherited)`);
+                    loadTokens();
+                } catch { showToast('Failed to reassign'); }
+            }
+        );
+        return;
+    }
+
+    // No existing assignment — just assign normally
     try {
         await updateDoc(doc(db, "customers", id), {
             assignedTo: email,
