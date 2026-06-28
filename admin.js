@@ -166,6 +166,7 @@ function renderTokens() {
         const status = t.status || 'active';
         const expiry = getExpiryInfo(t.expiresAt);
         const isBlocked = status !== 'active';
+        const isExpired = expiry.isExpired;
 
         // Status badge
         let statusBadge;
