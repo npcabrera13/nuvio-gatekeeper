@@ -396,6 +396,21 @@ document.getElementById('create-submit').addEventListener('click', async () => {
     const name = document.getElementById('create-name').value.trim();
     const days = parseInt(document.getElementById('create-days').value) || 30;
     if (!email || !password) { showToast('Email and password required'); return; }
+
+    // Check for duplicate Nuvio email
+    const existing = allTokens.find(t => (t.nuvioEmail || '').toLowerCase() === email.toLowerCase());
+    if (existing) {
+        closeModal('create-modal');
+        showConfirm('Duplicate Nuvio Email', `A token with Nuvio email "${email}" already exists (${existing.id}). Create another one anyway?`, () => {
+            doCreateToken(email, password, name, days);
+        });
+        return;
+    }
+
+    doCreateToken(email, password, name, days);
+});
+
+async function doCreateToken(email, password, name, days) {
     const id = randomId();
     const expires = new Date(Date.now() + days * 86400000);
     try {
@@ -408,7 +423,7 @@ document.getElementById('create-submit').addEventListener('click', async () => {
         closeModal('create-modal');
         loadTokens();
     } catch { showToast('Failed'); }
-});
+}
 
 // ── Bulk ──
 document.getElementById('bulk-btn').addEventListener('click', () => {
