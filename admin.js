@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Config ──
-const ADMIN_PASSWORD_HASH = "7f5741fbd93481f422aa5d0373c8b1c0bce7d4b9fa900bc40ac8fc624011e98d";
+const ADMIN_PASSWORD_HASH = "401d8a16dafd116ef22f152f8cc3c2f6588e1847c3934cf24d2284607afb5372";
 
 const firebaseConfig = {
     apiKey: "AIzaSyC4OXdfVs_mXPinhmpAt2su8WKZhUDXWoQ",
