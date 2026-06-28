@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-    getFirestore, collection, getDocs,
+    getFirestore, collection, getDocs, query, where, limit,
     doc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -57,25 +57,20 @@ function getExpiryInfo(expiresAt) {
     if (expiresAt.toMillis) ms = expiresAt.toMillis();
     else if (expiresAt.seconds) ms = expiresAt.seconds * 1000;
     else ms = new Date(expiresAt).getTime();
-
     const now = Date.now();
     const diff = ms - now;
     const days = Math.floor(diff / 86400000);
     const isExpired = diff <= 0;
-
     const date = new Date(ms);
     const text = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
     let daysLabel = '';
     if (isExpired) daysLabel = 'Expired';
     else if (days === 0) daysLabel = 'Today';
     else if (days === 1) daysLabel = '1 day left';
     else daysLabel = days + ' days left';
-
     return { text, daysLabel, isExpired, timestamp: ms };
 }
 
-// ── Token status helpers ──
 function getTokenStatus(t) {
     const assignedTo = t.assignedTo || '';
     const isAssigned = assignedTo && assignedTo.trim() !== '';
@@ -85,7 +80,6 @@ function getTokenStatus(t) {
     const isExpired = expiry.isExpired;
     const isUnconfigured = !t.nuvioEmail || t.nuvioEmail.trim() === '';
     const isAvailable = !isAssigned && !isBlocked && !isExpired && !isUnconfigured;
-
     let badgeClass, badgeText;
     if (isBlocked && isExpired) { badgeClass = 'badge-red'; badgeText = 'Expired'; }
     else if (isBlocked) { badgeClass = 'badge-red'; badgeText = 'Blocked'; }
@@ -93,9 +87,25 @@ function getTokenStatus(t) {
     else if (isUnconfigured) { badgeClass = 'badge-muted'; badgeText = 'Unconfigured'; }
     else if (isAssigned) { badgeClass = 'badge-amber'; badgeText = 'Assigned'; }
     else { badgeClass = 'badge-green'; badgeText = 'Available'; }
-
     return { isAssigned, isBlocked, isExpired, isUnconfigured, isAvailable, badgeClass, badgeText, expiry, assignedTo, status };
 }
+
+// ── Confirmation Modal (replaces browser confirm) ──
+let confirmCallback = null;
+function showConfirm(title, message, onConfirm) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    confirmCallback = onConfirm;
+    openModal('confirm-modal');
+}
+document.getElementById('confirm-yes').addEventListener('click', () => {
+    closeModal('confirm-modal');
+    if (confirmCallback) { confirmCallback(); confirmCallback = null; }
+});
+document.getElementById('confirm-no').addEventListener('click', () => {
+    closeModal('confirm-modal');
+    confirmCallback = null;
+});
 
 // ── Login ──
 async function login() {
@@ -104,7 +114,6 @@ async function login() {
     const btn = document.getElementById('login-btn');
     const password = input.value.trim();
     if (!password) { error.textContent = 'Enter password'; return; }
-
     btn.textContent = 'Checking...';
     btn.disabled = true;
     const hash = await hashStr(password);
@@ -136,9 +145,7 @@ async function loadTokens() {
     try {
         const snapshot = await getDocs(collection(db, "customers"));
         allTokens = [];
-        snapshot.forEach(docSnap => {
-            allTokens.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        snapshot.forEach(docSnap => { allTokens.push({ id: docSnap.id, ...docSnap.data() }); });
         updateStats();
         renderTokens();
     } catch (err) {
@@ -175,7 +182,6 @@ function getFilteredTokens() {
         if (currentFilter === 'blocked' && !s.isBlocked) return false;
         if (currentFilter === 'expired' && !(s.isExpired && !s.isBlocked)) return false;
         if (currentFilter === 'unconfigured' && !s.isUnconfigured) return false;
-
         if (searchTerm) {
             const haystack = [t.id, t.nuvioEmail, t.nuvioPassword, t.name, t.assignedTo, t.notes]
                 .filter(Boolean).join(' ').toLowerCase();
@@ -189,7 +195,6 @@ function getFilteredTokens() {
 function renderTokens() {
     const filtered = getFilteredTokens();
     document.getElementById('result-count').textContent = `${filtered.length} token${filtered.length !== 1 ? 's' : ''}`;
-
     const noResults = document.getElementById('no-results');
     if (filtered.length === 0) {
         document.getElementById('tokens-tbody').innerHTML = '';
@@ -198,7 +203,6 @@ function renderTokens() {
         return;
     }
     noResults.classList.add('hidden');
-
     renderDesktopTable(filtered);
     renderMobileCards(filtered);
 }
@@ -211,7 +215,6 @@ function renderDesktopTable(tokens) {
         const assignedBadge = s.isAssigned
             ? `<span class="badge badge-muted">${escapeHtml(s.assignedTo)}</span>`
             : '<span style="color:var(--text-dim)">—</span>';
-
         return `
         <tr>
             <td>${escapeHtml(name)}</td>
@@ -222,12 +225,15 @@ function renderDesktopTable(tokens) {
             <td><span class="badge ${s.badgeClass}">${s.badgeText}</span></td>
             <td>
                 <div class="action-btns">
-                    <button class="icon-btn" title="Copy link" onclick="copyLink('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
                     <button class="icon-btn" title="Edit" onclick="openEdit('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     <button class="icon-btn" title="Renew" onclick="openRenew('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
-                    ${s.isAssigned ? `<button class="icon-btn" title="Unassign" onclick="unassign('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg></button>` : ''}
-                    <button class="icon-btn" title="${s.isBlocked ? 'Unblock' : 'Block'}" onclick="toggleBlock('${escapeJs(t.id)}','${escapeJs(s.status)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle>${s.isBlocked ? '<line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>' : '<line x1="1" y1="1" x2="23" y2="23"></line>'}</svg></button>
-                    <button class="icon-btn danger" title="Delete" onclick="deleteToken('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    <button class="icon-btn" title="More" onclick="toggleRowMenu('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+                </div>
+                <div class="row-menu hidden" id="menu-${escapeJs(t.id)}">
+                    <button onclick="copyLink('${escapeJs(t.id)}')">Copy Link</button>
+                    ${s.isAssigned ? `<button onclick="confirmUnassign('${escapeJs(t.id)}')">Unassign</button>` : `<button onclick="openAssign('${escapeJs(t.id)}')">Assign to User</button>`}
+                    <button onclick="confirmBlock('${escapeJs(t.id)}','${escapeJs(s.status)}')">${s.isBlocked ? 'Unblock' : 'Block'}</button>
+                    <button class="danger" onclick="confirmDelete('${escapeJs(t.id)}')">Delete</button>
                 </div>
             </td>
         </tr>`;
@@ -256,22 +262,35 @@ function renderMobileCards(tokens) {
                 <button class="btn btn-ghost" onclick="copyLink('${escapeJs(t.id)}')">Copy Link</button>
                 <button class="btn btn-ghost" onclick="openEdit('${escapeJs(t.id)}')">Edit</button>
                 <button class="btn btn-ghost" onclick="openRenew('${escapeJs(t.id)}')">Renew</button>
-                ${s.isAssigned ? `<button class="btn btn-ghost" onclick="unassign('${escapeJs(t.id)}')">Unassign</button>` : `<button class="btn btn-ghost" onclick="toggleBlock('${escapeJs(t.id)}','${escapeJs(s.status)}')">${s.isBlocked ? 'Unblock' : 'Block'}</button>`}
-                <button class="btn btn-danger" onclick="deleteToken('${escapeJs(t.id)}')">Delete</button>
+                ${s.isAssigned ? `<button class="btn btn-ghost" onclick="confirmUnassign('${escapeJs(t.id)}')">Unassign</button>` : `<button class="btn btn-ghost" onclick="openAssign('${escapeJs(t.id)}')">Assign</button>`}
+                <button class="btn btn-ghost" onclick="confirmBlock('${escapeJs(t.id)}','${escapeJs(s.status)}')">${s.isBlocked ? 'Unblock' : 'Block'}</button>
+                <button class="btn btn-danger" onclick="confirmDelete('${escapeJs(t.id)}')">Delete</button>
             </div>
         </div>`;
     }).join('');
 }
 
-// ── Actions ──
-window.copyCreds = (email, pass) => {
-    navigator.clipboard.writeText(`Email: ${email}\nPassword: ${pass}`);
-    showToast('Credentials copied');
+// ── Row menu toggle (desktop) ──
+window.toggleRowMenu = (id) => {
+    const menu = document.getElementById(`menu-${id}`);
+    // Close all other menus
+    document.querySelectorAll('.row-menu').forEach(m => { if (m.id !== `menu-${id}`) m.classList.add('hidden'); });
+    menu.classList.toggle('hidden');
 };
+
+// Close menus when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.action-btns') && !e.target.closest('.row-menu')) {
+        document.querySelectorAll('.row-menu').forEach(m => m.classList.add('hidden'));
+    }
+});
+
+// ── Actions ──
 window.copyLink = (tokenId) => {
     navigator.clipboard.writeText(`https://nuviostreamapi.vercel.app/${tokenId}/manifest.json`);
     showToast('Link copied');
 };
+
 window.openEdit = (id) => {
     const t = allTokens.find(x => x.id === id);
     if (!t) return;
@@ -283,6 +302,7 @@ window.openEdit = (id) => {
     document.getElementById('edit-notes').value = t.notes || '';
     openModal('edit-modal');
 };
+
 window.openRenew = (id) => {
     const t = allTokens.find(x => x.id === id);
     if (!t) return;
@@ -295,30 +315,46 @@ window.openRenew = (id) => {
     document.getElementById('renew-days').value = '7';
     openModal('renew-modal');
 };
-window.unassign = async (id) => {
-    if (!confirm('Unassign this token?')) return;
-    try {
-        await updateDoc(doc(db, "customers", id), { assignedTo: null, name: '' });
-        showToast('Unassigned');
-        loadTokens();
-    } catch { showToast('Failed'); }
+
+window.openAssign = (id) => {
+    document.getElementById('assign-id').value = id;
+    document.getElementById('assign-email').value = '';
+    openModal('assign-modal');
 };
-window.toggleBlock = async (id, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
-    try {
-        await updateDoc(doc(db, "customers", id), { status: newStatus });
-        showToast(newStatus === 'blocked' ? 'Blocked' : 'Unblocked');
-        loadTokens();
-    } catch { showToast('Failed'); }
+
+// Confirmation actions (use popup, not browser confirm)
+window.confirmUnassign = (id) => {
+    showConfirm('Unassign Token', 'This will remove the customer from this token. They will lose access immediately. Continue?', async () => {
+        try {
+            await updateDoc(doc(db, "customers", id), { assignedTo: null, name: '' });
+            showToast('Unassigned');
+            loadTokens();
+        } catch { showToast('Failed'); }
+    });
 };
-window.deleteToken = async (id) => {
-    if (!confirm(`Delete "${id}"?`)) return;
-    try {
-        await deleteDoc(doc(db, "customers", id));
-        showToast('Deleted');
-        loadTokens();
-    } catch { showToast('Failed'); }
+
+window.confirmBlock = (id, currentStatus) => {
+    const action = currentStatus === 'active' ? 'block' : 'unblock';
+    showConfirm(`${action.charAt(0).toUpperCase() + action.slice(1)} Token`, `Are you sure you want to ${action} this token?`, async () => {
+        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
+        try {
+            await updateDoc(doc(db, "customers", id), { status: newStatus });
+            showToast(newStatus === 'blocked' ? 'Blocked' : 'Unblocked');
+            loadTokens();
+        } catch { showToast('Failed'); }
+    });
 };
+
+window.confirmDelete = (id) => {
+    showConfirm('Delete Token', `This will permanently delete "${id}". The user will lose access immediately. This cannot be undone.`, async () => {
+        try {
+            await deleteDoc(doc(db, "customers", id));
+            showToast('Deleted');
+            loadTokens();
+        } catch { showToast('Failed'); }
+    });
+};
+
 window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
 window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
@@ -407,7 +443,6 @@ document.getElementById('renew-add-btn').addEventListener('click', async () => {
     const t = allTokens.find(x => x.id === id);
     if (!t) return;
     const s = getTokenStatus(t);
-    // Add to current expiry (or from now if expired)
     const base = s.expiry.timestamp && !s.isExpired ? new Date(s.expiry.timestamp) : new Date();
     const newExpiry = new Date(base.getTime() + days * 86400000);
     try {
@@ -425,10 +460,8 @@ document.getElementById('renew-remove-btn').addEventListener('click', async () =
     const t = allTokens.find(x => x.id === id);
     if (!t) return;
     const s = getTokenStatus(t);
-    // Remove from current expiry (or from now if no expiry)
     const base = s.expiry.timestamp ? new Date(s.expiry.timestamp) : new Date();
     let newExpiry = new Date(base.getTime() - days * 86400000);
-    // Don't allow setting before now
     if (newExpiry.getTime() < Date.now()) newExpiry = new Date();
     try {
         await updateDoc(doc(db, "customers", id), { expiresAt: Timestamp.fromDate(newExpiry) });
@@ -438,19 +471,28 @@ document.getElementById('renew-remove-btn').addEventListener('click', async () =
     } catch { showToast('Failed'); }
 });
 
-// Quick set (overwrite to exactly N days from now)
+// Quick set fills the input (doesn't auto-apply)
 document.querySelectorAll('.renew-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const id = document.getElementById('renew-id').value;
-        const days = parseInt(btn.dataset.days);
-        const newExpiry = new Date(Date.now() + days * 86400000);
-        try {
-            await updateDoc(doc(db, "customers", id), { expiresAt: Timestamp.fromDate(newExpiry), status: 'active' });
-            showToast(`Set to ${days} days`);
-            closeModal('renew-modal');
-            loadTokens();
-        } catch { showToast('Failed'); }
+    btn.addEventListener('click', () => {
+        document.getElementById('renew-days').value = btn.dataset.days;
     });
+});
+
+// ── Custom Assign ──
+document.getElementById('assign-submit').addEventListener('click', async () => {
+    const id = document.getElementById('assign-id').value;
+    const email = document.getElementById('assign-email').value.trim().toLowerCase();
+    if (!email) { showToast('Enter customer email'); return; }
+    try {
+        await updateDoc(doc(db, "customers", id), {
+            assignedTo: email,
+            name: email,
+            status: 'active'
+        });
+        showToast(`Assigned to ${email}`);
+        closeModal('assign-modal');
+        loadTokens();
+    } catch { showToast('Failed'); }
 });
 
 // ── Export ──
@@ -479,17 +521,11 @@ document.getElementById('search-input').addEventListener('input', (e) => {
 document.querySelectorAll('.stat-card').forEach(card => {
     card.addEventListener('click', () => {
         const filter = card.dataset.filter;
-        if (currentFilter === filter) {
-            currentFilter = 'all';
-        } else {
-            currentFilter = filter;
-        }
-        // Update active styling
+        currentFilter = (currentFilter === filter) ? 'all' : filter;
         document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
         if (currentFilter !== 'all') {
             document.querySelector(`.stat-card[data-filter="${currentFilter}"]`)?.classList.add('active');
         }
-        // Update indicator
         const indicator = document.getElementById('filter-indicator');
         const text = document.getElementById('filter-text');
         if (currentFilter !== 'all') {
