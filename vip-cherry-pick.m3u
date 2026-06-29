@@ -10,7 +10,7 @@ https://abcnews-streams.akamaized.net/hls/live/2023560/abcnewshudson1/master_400
 #EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/aljazeera-uk.png" fanart="https://www.screenly.io/assets/images/site/edge-apps/svg/al-jazeera-news-wide.svg" group-title="Global News", Al Jazeera English
 https://live-hls-apps-aje-fa.getaj.net/AJE/index.m3u8
 
-#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Abante_masthead.svg/500px-Abante_masthead.svg.png" fanart="https://scontent.fmnl17-8.fna.fbcdn.net/v/t39.30808-6/645633341_122256890024378056_1166776300429406761_n.jpg?stp=dst-jpg_tt6&cstp=mx2050x780&ctp=s2050x780&_nc_cat=104&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeEzsbhwyDhnaOgseehEgPtGmsPGC7MEA7Oaw8YLswQDs3Kn4I4dmYvtr_pAR8gf-TafOfLc0i59LsbqkgqpbZ8Q&_nc_ohc=pt6yV3Yx7goQ7kNvwE57RMJ&_nc_oc=AdoS_fIygIX8EZ3KxI1xMqE_TQPSMCEgFgF9QNBQk8DPsia_hmRQe9pa091k2jgAsms&_nc_zt=23&_nc_ht=scontent.fmnl17-8.fna&_nc_gid=L64X5yNkPRzKCvDZ9JR35w&_nc_ss=7b2a8&oh=00_Af9ewNR7wqG12vmrfmhTaO3sDYsIn9xAkAAILKECUB-XUg&oe=6A3D0754" group-title="PH News", Abante
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Abante_masthead.svg/500px-Abante_masthead.svg.png" fanart="https://www.abante.com.ph/wp-content/uploads/2026/06/ABANTE-GENERIC.png" group-title="PH News", Abante
 https://amg19223-amg19223c12-amgplt0352.playout.now3.amagi.tv/playlist/amg19223-amg19223c12-amgplt0352/playlist.m3u8
 
 # --- 🧸 KIDS & CARTOONS ---
@@ -45,3 +45,31 @@ https://amg18481-amg18481c1-amgplt0352.playout.now3.amagi.tv/playlist/amg18481-a
 # --- ⚽ SPORTS ---
 #EXTINF:-1 tvg-logo="https://www.raithrovers.net/wp-content/uploads/2025/05/INFO-1-scaled.png" fanart="https://images.premiersports.com/premiersports/website/articles/HZXNd2SwgrOp0ghmoOaZZ2s9rCXWN3KCwj2TMu12.jpg" group-title="PH Sports", Premier Sports
 https://amg19223-amg19223c3-amgplt0351.playout.now3.amagi.tv/playlist/amg19223-amg19223c3-amgplt0351/playlist.m3u8
+
+# --- 🌍 FREE-TO-AIR: NEWS & ENTERTAINMENT ---
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/red-bull-tv-int.png" fanart="https://mid-east.info/wp-content/uploads/2024/03/unnamed-60.jpg" group-title="Global Sports", Red Bull TV
+https://3ea22335.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWdiX1JlZEJ1bGxUVl9ITFM/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-kingdom/bbc-news-uk.png" fanart="https://yt3.googleusercontent.com/xDk7iLEwnQRQkEzHiNXonOI8UbLbYKATVoPoErXOKleYpfS4PYvJmg8DYcAj7MQXiIZvqC_s8fE=w1920" group-title="Global News", BBC News
+https://vs-hls-push-ww-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8
+
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/dw-english-int.png" fanart="https://yt3.googleusercontent.com/Yo7krqaAbhh9AVQL-Z9uVp2NMLyYZs2I2hEwbXu37e23oT558lrnKS0SyG26YoFXI5WMeyk-mT8=w1920" group-title="Global News", DW English
+https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8
+
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/international/france-24-english-int.png" fanart="https://pbs.twimg.com/media/G_-Vtf4WYAAVakV.jpg" group-title="Global News", France 24 English
+https://live.france24.com/hls/live/2037218-b/F24_EN_HI_HLS/master_5000.m3u8
+
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/united-states/pbs-kids-dash-icon-us.png" fanart="https://yt3.googleusercontent.com/0kkSO5JBix5kId_0ZlED1MUgXzOEhbPhxprEArwzOZKRJhbyyGi1g5OCx4rU_Dhq6fNv2H5FJA=w1920" group-title="Kids", PBS Kids
+https://livestream.pbskids.org/out/v1/14507d931bbe48a69287e4850e53443c/est.m3u8
+
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/countries/turkey/trt-world-tr.png" fanart="https://yt3.googleusercontent.com/sgz1tR9wZud4j89okjTvfkD962bc-LkUFDhesknubqkQy5WaRAlUdpymWlWV1ScajhgFXIc73w=w1920" group-title="Global News", TRT World
+https://tv-trtworld.medya.trt.com.tr/master.m3u8
+
+#EXTINF:-1 tvg-logo="https://cdn.jsdelivr.net/gh/tv-logo/tv-logos@main/misc/vod/reuters-vod.png" fanart="https://yt3.googleusercontent.com/RHigssGV3ScRhVbiGSZTaqHMB8pt99bTbJazicNLG1tRr3-WxXdgPVKu-1O6HLUW6T9UQ_p8HQ=w1920" group-title="Global News", Reuters
+https://amg00453-reuters-amg00453c1-rakuten-uk-2110.playouts.now.amagi.tv/playlist/amg00453-reuters-reuters-rakutenuk/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://www.autentic.com/images/wurl-bits-adventure-earth.jpg" fanart="https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Lake_Mary_Mammoth_September_2016.jpg/1920px-Lake_Mary_Mammoth_September_2016.jpg" group-title="Documentaries", Adventure Earth
+https://a57e9c69976649b582a8d7604c00e69a.mediatailor.us-east-1.amazonaws.com/v1/master/44f73ba4d03e9607dcd9bebdcb8494d86964f1d8/RlaxxTV-eu_AdventureEarth/playlist.m3u8
+
+#EXTINF:-1 tvg-logo="https://i.imgur.com/ocr50ki.jpeg" fanart="https://yt3.googleusercontent.com/iF8IChOxa8nAQf_qfDzWa_6UGsrLahmjNp0dKO43Z_jRb8s8l-VFaeq69dNmtaRjW1EFm0E5oA=w1920" group-title="Anime", FilmRise Anime
+https://dvu7aia8rjlfm.cloudfront.net/master.m3u8
