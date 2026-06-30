@@ -1,1165 +1,1111 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  Nuvio Admin — complete rewrite
+//  Targets: admin-page.html structure (login-overlay, app, stats-grid,
+//  analytics-section, actions-bar, tokens-tbody, tokens-cards, modals)
+// ─────────────────────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
     getFirestore, collection, getDocs,
-    doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp
+    doc, getDoc, setDoc, updateDoc, deleteDoc,
+    serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ── Configuration ──────────────────────────────────────────────────────────
+// ── Configuration ───────────────────────────────────────────────────────────
 const ADMIN_PASSWORD_HASH = "7f5741fbd93481f422aa5d0373c8b1c0bce7d4b9fa900bc40ac8fc624011e98d";
 
-async function hashStr(str) {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Vite compatibility wrapper for vanilla Express setup
-const envObj = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
-
 const firebaseConfig = {
-    apiKey: envObj.VITE_FIREBASE_API_KEY || "AIzaSyC4OXdfVs_mXPinhmpAt2su8WKZhUDXWoQ",
-    authDomain: envObj.VITE_FIREBASE_AUTH_DOMAIN || "multiaddon.firebaseapp.com",
-    projectId: envObj.VITE_FIREBASE_PROJECT_ID || "multiaddon",
-    storageBucket: envObj.VITE_FIREBASE_STORAGE_BUCKET || "multiaddon.firebasestorage.app",
-    messagingSenderId: envObj.VITE_FIREBASE_MESSAGING_SENDER_ID || "963978475190",
-    appId: envObj.VITE_FIREBASE_APP_ID || "1:963978475190:web:6796687180b021e049d817"
+    apiKey: "AIzaSyC4OXdfVs_mXPinhmpAt2su8WKZhUDXWoQ",
+    authDomain: "multiaddon.firebaseapp.com",
+    projectId: "multiaddon",
+    storageBucket: "multiaddon.firebasestorage.app",
+    messagingSenderId: "963978475190",
+    appId: "1:963978475190:web:6796687180b021e049d817"
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const MANIFEST_BASE = "https://nuviostreamapi.vercel.app";
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
 const customersRef = collection(db, "customers");
+const promoRef = collection(db, "promoCodes");
 
-// ── Hardcoded Addons (must match api/proxy.js) ───────────────────────────────
-const ADDONS = [
-    { name: "Torrentio",      url: "https://torrentio.strem.fun/qualityfilter=hdrall,4k,brremux,dolbyvision,dolbyvisionwithhdr/manifest.json", canBlock: true },
-    { name: "Open Subtitles", url: "https://opensubtitles-v3.strem.io/manifest.json", canBlock: false },
-    { name: "Cinemata",       url: "https://v3-cinemeta.strem.io/manifest.json", canBlock: false },
-    { name: "Anime Kitsu",    url: "https://anime-kitsu.strem.fun/manifest.json", canBlock: false },
-    { name: "AioMetadata",    url: "https://aiometadata.elfhosted.com/stremio/44fe3014-a2d0-42df-b050-8b5f9d152947/manifest.json", canBlock: false },
-    { name: "PinoyTV",        url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL21hc3Rlci1waC12Mi5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiZGVmM2Y3OTAtMzViNi00NWFkLWJkMDItYWM3YjQ5MTU0YmM0In0=/manifest.json", canBlock: false },
-    { name: "VIPChannels",     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL3ZpcC1jaGVycnktcGljay5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMzMzZjYxNjktY2FiYy00NjEyLWJkNzgtZjZiZTMyYjg1NTRiIn0=/manifest.json", canBlock: false }
-];
+// ── State ────────────────────────────────────────────────────────────────────
+const state = {
+    tokens: [],          // [{id, nuvioEmail, nuvioPassword, name, assignedTo, status, expiresAt, createdAt, notes}]
+    promos: [],          // [{id, days, status, assignedTo, redeemedAt, createdAt}]
+    filter: "all",       // all | available | assigned | blocked | expired | unconfigured
+    search: "",
+    authed: false
+};
 
-// ── DOM Refs ────────────────────────────────────────────────────────────────
-const loginOverlay  = document.getElementById('login-overlay');
-const passwordInput = document.getElementById('password-input');
-const loginBtn      = document.getElementById('login-btn');
-const loginError    = document.getElementById('login-error');
-const dashboard     = document.getElementById('dashboard');
-const tbody         = document.getElementById('customers-body');
-const spinner       = document.getElementById('loading-spinner');
-const noCustomers   = document.getElementById('no-customers');
-const statTotal     = document.getElementById('stat-total');
-const statAvailable = document.getElementById('stat-available');
-const statAssigned  = document.getElementById('stat-assigned');
-const statBlocked   = document.getElementById('stat-blocked');
+let pendingConfirm = null;     // callback for confirm-modal
+let renewContext = null;       // { id, currentMs }
 
-const bulkModal     = document.getElementById('bulk-modal');
-const bulkInput     = document.getElementById('bulk-input');
-const bulkGenerateBtn = document.getElementById('bulk-generate-btn');
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
 
-const tokenModal    = document.getElementById('token-modal');
-const modalTitle    = document.getElementById('modal-title');
-const editTokenId   = document.getElementById('edit-token-id');
-const modalName     = document.getElementById('modal-name');
-const modalNotes    = document.getElementById('modal-notes');
-const modalNuvioEmail = document.getElementById('modal-nuvio-email');
-const modalNuvioPassword = document.getElementById('modal-nuvio-password');
+const loginOverlay = $("login-overlay");
+const passwordInput = $("password-input");
+const loginBtn = $("login-btn");
+const loginError = $("login-error");
 
-const modalTokenKey = document.getElementById('modal-token-key');
-const tokenKeyGroup = document.getElementById('token-key-group');
-const daysGroup     = document.getElementById('days-group');
-const saveTokenBtn  = document.getElementById('save-token-btn');
+const appEl = $("app");
+const refreshBtn = $("refresh-btn");
+const logoutBtn = $("logout-btn");
 
+const statsGrid = $("stats-grid");
+const statTotal = $("stat-total");
+const statAvailable = $("stat-available");
+const statAssigned = $("stat-assigned");
+const statBlocked = $("stat-blocked");
+const statExpired = $("stat-expired");
+const statUnconfigured = $("stat-unconfigured");
 
+const barAssigned = $("bar-assigned");
+const barAvailable = $("bar-available");
+const barExpiring = $("bar-expiring");
+const pctAssigned = $("pct-assigned");
+const pctAvailable = $("pct-available");
+const cntExpiring = $("cnt-expiring");
 
-const renewModal    = document.getElementById('renew-modal');
-const renewCustomerName = document.getElementById('renew-customer-name');
-const renewDays     = document.getElementById('renew-days');
-const confirmRenewBtn = document.getElementById('confirm-renew-btn');
+const searchInput = $("search-input");
+const exportBtn = $("export-btn");
+const bulkBtn = $("bulk-btn");
+const promoBtn = $("promo-btn");
+const createBtn = $("create-btn");
 
-const toastEl       = document.getElementById('toast');
+const filterIndicator = $("filter-indicator");
+const filterText = $("filter-text");
+const clearFilter = $("clear-filter");
 
+const tokensTbody = $("tokens-tbody");
+const tokensCards = $("tokens-cards");
+const noResults = $("no-results");
+const resultCount = $("result-count");
 
+// create-modal
+const createModal = $("create-modal");
+const createEmail = $("create-email");
+const createPassword = $("create-password");
+const createName = $("create-name");
+const createSubmit = $("create-submit");
 
-// ── Toast Utility ───────────────────────────────────────────────────────────
+// bulk-modal
+const bulkModal = $("bulk-modal");
+const bulkText = $("bulk-text");
+const bulkSubmit = $("bulk-submit");
+
+// edit-modal
+const editModal = $("edit-modal");
+const editId = $("edit-id");
+const editToken = $("edit-token");
+const editEmail = $("edit-email");
+const editPassword = $("edit-password");
+const editName = $("edit-name");
+const editNotes = $("edit-notes");
+const editSubmit = $("edit-submit");
+
+// renew-modal
+const renewModal = $("renew-modal");
+const renewId = $("renew-id");
+const renewInfo = $("renew-info");
+const renewDays = $("renew-days");
+const renewAddBtn = $("renew-add-btn");
+const renewRemoveBtn = $("renew-remove-btn");
+
+// assign-modal
+const assignModal = $("assign-modal");
+const assignIdEl = $("assign-id");
+const assignEmail = $("assign-email");
+const assignSubmit = $("assign-submit");
+
+// promo-modal
+const promoModal = $("promo-modal");
+const promoDaysInput = $("promo-days-input");
+const generatePromoBtn = $("generate-promo-btn");
+const promoCodesList = $("promo-codes-list");
+
+// confirm-modal
+const confirmModal = $("confirm-modal");
+const confirmTitle = $("confirm-title");
+const confirmMessage = $("confirm-message");
+const confirmYes = $("confirm-yes");
+const confirmNo = $("confirm-no");
+
+const toastEl = $("toast");
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+async function hashStr(str) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function escapeHtml(s) {
+    if (s === null || s === undefined) return "";
+    return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 let toastTimer = null;
 function showToast(msg) {
     toastEl.textContent = msg;
-    toastEl.classList.add('show');
+    toastEl.classList.remove("hidden");
+    // force reflow so animation re-triggers
+    void toastEl.offsetWidth;
+    toastEl.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toastEl.classList.remove('show'); }, 3000);
+    toastTimer = setTimeout(() => {
+        toastEl.classList.remove("show");
+        setTimeout(() => toastEl.classList.add("hidden"), 300);
+    }, 3000);
 }
 
-// ── Modal Handlers ──────────────────────────────────────────────────────────
-document.querySelectorAll('.close-modal').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const targetId = btn.getAttribute('data-target');
-        document.getElementById(targetId).classList.add('hidden');
-    });
-});
-
-document.getElementById('open-bulk-modal').addEventListener('click', () => {
-    bulkInput.value = '';
-    bulkModal.classList.remove('hidden');
-});
-
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    modalTitle.textContent = "Create New Token";
-    editTokenId.value = '';
-    modalName.value = '';
-    modalNotes.value = '';
-    modalNuvioEmail.value = '';
-    modalNuvioPassword.value = '';
-    modalTokenKey.value = '';
-    tokenKeyGroup.classList.add('hidden');
-    daysGroup.classList.remove('hidden');
-    tokenModal.classList.remove('hidden');
-});
-
-document.getElementById('view-addons-btn').addEventListener('click', async () => {
-    const listEl = document.getElementById('active-addons-list');
-    listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading addons list...</div>`;
-    document.getElementById('addons-modal').classList.remove('hidden');
-
-    try {
-        const res = await fetch('/api/status');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        
-        if (data && data.addons && data.addons.length > 0) {
-            listEl.innerHTML = '';
-            data.addons.forEach(addon => {
-                const item = document.createElement('div');
-                item.className = 'premium-glass';
-                item.style.padding = '0.75rem 1rem';
-                item.style.borderRadius = '8px';
-                item.style.display = 'flex';
-                item.style.flexDirection = 'column';
-                item.style.gap = '0.5rem';
-                item.style.border = '1px solid rgba(255, 255, 255, 0.08)';
-                
-                // Header (Name + Tags)
-                const header = document.createElement('div');
-                header.style.display = 'flex';
-                header.style.justifyContent = 'space-between';
-                header.style.alignItems = 'center';
-
-                const nameWrapper = document.createElement('div');
-                nameWrapper.style.fontWeight = '600';
-                nameWrapper.style.color = '#f8fafc';
-                nameWrapper.textContent = addon.name;
-                header.appendChild(nameWrapper);
-
-                const resourcesWrapper = document.createElement('div');
-                resourcesWrapper.style.fontSize = '0.7rem';
-                resourcesWrapper.style.color = 'var(--text-muted)';
-                resourcesWrapper.style.display = 'flex';
-                resourcesWrapper.style.gap = '0.25rem';
-                
-                addon.resources.forEach(r => {
-                    const tag = document.createElement('span');
-                    tag.style.background = 'rgba(255, 255, 255, 0.05)';
-                    tag.style.padding = '0.1rem 0.35rem';
-                    tag.style.borderRadius = '4px';
-                    tag.textContent = r;
-                    resourcesWrapper.appendChild(tag);
-                });
-                header.appendChild(resourcesWrapper);
-                item.appendChild(header);
-
-                // URL section
-                const urlContainer = document.createElement('div');
-                urlContainer.style.display = 'flex';
-                urlContainer.style.gap = '0.5rem';
-                urlContainer.style.alignItems = 'center';
-                urlContainer.style.marginTop = '0.25rem';
-
-                const urlInput = document.createElement('input');
-                urlInput.type = 'text';
-                urlInput.className = 'form-input';
-                urlInput.value = addon.url || '';
-                urlInput.readOnly = true;
-                urlInput.style.flex = '1';
-                urlInput.style.fontSize = '0.75rem';
-                urlInput.style.padding = '0.35rem 0.6rem';
-                urlInput.style.height = 'auto';
-                urlContainer.appendChild(urlInput);
-
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'btn btn-outline btn-sm';
-                copyBtn.style.padding = '0.35rem 0.75rem';
-                copyBtn.style.fontSize = '0.75rem';
-                copyBtn.textContent = 'Copy';
-                copyBtn.onclick = () => {
-                    navigator.clipboard.writeText(addon.url)
-                        .then(() => showToast('🔗 Copied addon URL!'))
-                        .catch(() => {
-                            urlInput.select();
-                            document.execCommand('copy');
-                            showToast('🔗 Copied addon URL!');
-                        });
-                };
-                urlContainer.appendChild(copyBtn);
-                item.appendChild(urlContainer);
-
-                listEl.appendChild(item);
-            });
-        } else {
-            listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No addons configured.</div>`;
-        }
-    } catch (err) {
-        console.error("Error fetching status:", err);
-        listEl.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 1.5rem;">Error loading addons: ${err.message}</div>`;
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
     }
-});
-
-function openEditModal(id, dataStr) {
-    const data = JSON.parse(decodeURIComponent(dataStr));
-    modalTitle.textContent = "Edit Token";
-    editTokenId.value = id;
-    modalName.value = data.name || '';
-    modalNotes.value = data.notes || '';
-    modalNuvioEmail.value = data.nuvioEmail || '';
-    modalNuvioPassword.value = data.nuvioPassword || '';
-    modalTokenKey.value = id;
-    tokenKeyGroup.classList.remove('hidden');
-    daysGroup.classList.add('hidden'); // Editing days is done via Renew modal
-    tokenModal.classList.remove('hidden');
+}
+function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (_) {}
+    document.body.removeChild(ta);
 }
 
+function genTokenId() {
+    return "nuvio_" + Math.random().toString(36).substring(2, 9);
+}
 
+function genPromoCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const block = () => Array.from({ length: 4 }, () =>
+        chars[Math.floor(Math.random() * chars.length)]).join("");
+    return `NUVIO-${block()}-${block()}`;
+}
 
-// ── Save/Edit Token Logic ───────────────────────────────────────────────────
-saveTokenBtn.addEventListener('click', async () => {
-    const nameVal = modalName.value.trim();
-    const isEdit = editTokenId.value !== '';
-    
-    saveTokenBtn.disabled = true;
-    saveTokenBtn.textContent = isEdit ? "Saving..." : "Generating...";
+// Firestore Timestamp → ms
+function tsToMs(ts) {
+    if (!ts) return null;
+    if (typeof ts.toMillis === "function") return ts.toMillis();
+    if (typeof ts.seconds === "number") return ts.seconds * 1000;
+    if (typeof ts === "number") return ts;
+    return null;
+}
 
+function formatDate(ms) {
+    if (!ms) return "—";
+    const d = new Date(ms);
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function formatDateTime(ms) {
+    if (!ms) return "—";
+    const d = new Date(ms);
+    return d.toLocaleDateString("en-US", {
+        year: "numeric", month: "short", day: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
+}
+
+// ── Token classification ─────────────────────────────────────────────────────
+// available  = status=="active" AND assignedTo null/empty AND has nuvioEmail
+// assigned   = assignedTo not null/empty
+// blocked    = status != "active"
+// expired    = expiresAt < now AND status == "active"
+// unconfigured = no nuvioEmail
+function categorizeToken(t) {
+    if (!t.nuvioEmail || !String(t.nuvioEmail).trim()) return "unconfigured";
+    if (t.status !== "active") return "blocked";
+    if (t.assignedTo && String(t.assignedTo).trim()) return "assigned";
+    const exp = tsToMs(t.expiresAt);
+    if (exp !== null && exp < Date.now()) return "expired";
+    return "available";
+}
+
+const STATUS_META = {
+    available:    { label: "Available",    color: "#10b981" },
+    assigned:     { label: "Assigned",     color: "#f59e0b" },
+    blocked:      { label: "Blocked",      color: "#ef4444" },
+    expired:      { label: "Expired",      color: "#fb923c" },
+    unconfigured: { label: "Unconfigured", color: "#9ca3af" }
+};
+
+function statusBadgeHTML(t) {
+    const cat = categorizeToken(t);
+    const meta = STATUS_META[cat];
+    return `<span class="badge" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:0.72rem;font-weight:600;background:${meta.color}22;color:${meta.color};border:1px solid ${meta.color}55;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${meta.color};"></span>${meta.label}
+    </span>`;
+}
+
+function manifestUrl(id) {
+    return `${MANIFEST_BASE}/${id}/manifest.json`;
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+async function tryLogin() {
+    const pw = passwordInput.value;
+    if (!pw) {
+        loginError.textContent = "Enter the admin password.";
+        return;
+    }
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Unlocking…";
+    loginError.textContent = "";
     try {
-        if (!isEdit) {
-            // Create — no days field, no expiry (set when assigned)
-            const randomId = "nuvio_" + Math.random().toString(36).substring(2, 9);
-
-            await setDoc(doc(db, "customers", randomId), {
-                name: nameVal,
-                status: 'active',
-                createdAt: serverTimestamp(),
-                nuvioEmail: modalNuvioEmail.value.trim(),
-                nuvioPassword: modalNuvioPassword.value.trim(),
-                assignedTo: null
-            });
-            showToast('✅ Token generated successfully.');
-            
-            // Auto copy bundle link immediately!
-            copyToClipboard(`https://nuviostreamapi.vercel.app/${randomId}/manifest.json`);
-            
+        const hash = await hashStr(pw);
+        if (hash === ADMIN_PASSWORD_HASH) {
+            localStorage.setItem("nuvio_admin_auth", "1");
+            state.authed = true;
+            showApp();
         } else {
-            // Edit
-            const oldId = editTokenId.value;
-            const newTokenId = modalTokenKey.value.trim();
-            if (!newTokenId) throw new Error("Token ID cannot be empty");
-
-            const nameVal = modalName.value.trim();
-            const notesVal = modalNotes.value.trim();
-            const updates = {
-                name: nameVal,
-                notes: notesVal,
-                nuvioEmail: modalNuvioEmail.value.trim(),
-                nuvioPassword: modalNuvioPassword.value.trim()
-            };
-
-            if (oldId !== newTokenId) {
-                // Rename = copy data to new doc ID + delete old one
-                const snap = await getDoc(doc(db, 'customers', oldId));
-                if (!snap.exists()) throw new Error('Original token not found.');
-                
-                const newData = { ...snap.data(), ...updates };
-                await setDoc(doc(db, 'customers', newTokenId), newData);
-                await deleteDoc(doc(db, 'customers', oldId));
-                showToast(`✅ Token renamed to ${newTokenId}`);
-            } else {
-                await updateDoc(doc(db, "customers", oldId), updates);
-                showToast('✅ Token updated.');
-            }
+            loginError.textContent = "Wrong password.";
+            passwordInput.value = "";
+            passwordInput.focus();
         }
-        tokenModal.classList.add('hidden');
-        loadData();
+    } catch (e) {
+        loginError.textContent = "Error: " + e.message;
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Unlock";
+    }
+}
+
+function logout() {
+    localStorage.removeItem("nuvio_admin_auth");
+    state.authed = false;
+    appEl.classList.add("hidden");
+    loginOverlay.classList.remove("hidden");
+    passwordInput.value = "";
+    passwordInput.focus();
+}
+
+function showApp() {
+    loginOverlay.classList.add("hidden");
+    appEl.classList.remove("hidden");
+    loadTokens();
+    loadPromos();
+}
+
+// ── Data loading ─────────────────────────────────────────────────────────────
+async function loadTokens() {
+    tokensTbody.innerHTML = `<tr><td colspan="7" class="loading-cell">Loading…</td></tr>`;
+    tokensCards.innerHTML = `<div class="loading-cell">Loading…</div>`;
+    try {
+        const snap = await getDocs(customersRef);
+        state.tokens = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        state.tokens.sort((a, b) => {
+            const ca = tsToMs(a.createdAt) || 0;
+            const cb = tsToMs(b.createdAt) || 0;
+            return cb - ca;
+        });
+        updateStats();
+        renderTokens();
     } catch (e) {
         console.error(e);
-        showToast('❌ ' + e.message);
+        tokensTbody.innerHTML = `<tr><td colspan="7" class="loading-cell" style="color:#ef4444;">Failed to load: ${escapeHtml(e.message)}</td></tr>`;
+        tokensCards.innerHTML = `<div class="loading-cell" style="color:#ef4444;">Failed to load: ${escapeHtml(e.message)}</div>`;
+        showToast("❌ Failed to load tokens.");
     }
-    
-    saveTokenBtn.disabled = false;
-    saveTokenBtn.textContent = isEdit ? "Save Changes" : "Generate Token";
+}
+
+async function loadPromos() {
+    try {
+        const snap = await getDocs(promoRef);
+        state.promos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        state.promos.sort((a, b) => (tsToMs(b.createdAt) || 0) - (tsToMs(a.createdAt) || 0));
+        renderPromoList();
+    } catch (e) {
+        console.error(e);
+        state.promos = [];
+        renderPromoList();
+    }
+}
+
+// ── Stats ────────────────────────────────────────────────────────────────────
+function updateStats() {
+    const totals = { all: 0, available: 0, assigned: 0, blocked: 0, expired: 0, unconfigured: 0 };
+    let expiringSoon = 0;
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+    for (const t of state.tokens) {
+        const cat = categorizeToken(t);
+        totals.all++;
+        totals[cat]++;
+        const exp = tsToMs(t.expiresAt);
+        if (exp !== null && exp > now && exp < now + sevenDays) expiringSoon++;
+    }
+
+    statTotal.textContent = totals.all;
+    statAvailable.textContent = totals.available;
+    statAssigned.textContent = totals.assigned;
+    statBlocked.textContent = totals.blocked;
+    statExpired.textContent = totals.expired;
+    statUnconfigured.textContent = totals.unconfigured;
+
+    const pctA = totals.all ? Math.round((totals.assigned / totals.all) * 100) : 0;
+    const pctV = totals.all ? Math.round((totals.available / totals.all) * 100) : 0;
+    pctAssigned.textContent = pctA + "%";
+    pctAvailable.textContent = pctV + "%";
+    cntExpiring.textContent = expiringSoon;
+    barAssigned.style.width = pctA + "%";
+    barAvailable.style.width = pctV + "%";
+    const pctE = totals.all ? Math.round((expiringSoon / totals.all) * 100) : 0;
+    barExpiring.style.width = pctE + "%";
+}
+
+// ── Render tokens ────────────────────────────────────────────────────────────
+function getFilteredTokens() {
+    const q = state.search.trim().toLowerCase();
+    return state.tokens.filter(t => {
+        if (state.filter !== "all" && categorizeToken(t) !== state.filter) return false;
+        if (!q) return true;
+        const hay = [
+            t.id, t.name, t.nuvioEmail, t.nuvioPassword,
+            t.assignedTo, t.notes, t.status
+        ].map(v => (v == null ? "" : String(v)).toLowerCase()).join(" ");
+        return hay.includes(q);
+    });
+}
+
+function renderTokens() {
+    const list = getFilteredTokens();
+
+    if (list.length === 0) {
+        tokensTbody.innerHTML = "";
+        tokensCards.innerHTML = "";
+        noResults.classList.remove("hidden");
+        resultCount.textContent = "0 tokens";
+        return;
+    }
+    noResults.classList.add("hidden");
+    resultCount.textContent = `${list.length} token${list.length === 1 ? "" : "s"}`;
+
+    // Desktop table
+    tokensTbody.innerHTML = list.map(renderRow).join("");
+
+    // Mobile cards
+    tokensCards.innerHTML = list.map(renderCard).join("");
+
+    // Wire menu buttons
+    tokensTbody.querySelectorAll("[data-menu-token]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openActionMenu(btn.dataset.menuToken, btn, "row");
+        });
+    });
+    tokensCards.querySelectorAll("[data-menu-token]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openActionMenu(btn.dataset.menuToken, btn, "card");
+        });
+    });
+}
+
+function renderRow(t) {
+    const exp = tsToMs(t.expiresAt);
+    const name = t.name || "<em style='color:var(--text-muted)'>Unnamed</em>";
+    const assigned = t.assignedTo
+        ? escapeHtml(t.assignedTo)
+        : `<span style="color:var(--text-muted)">—</span>`;
+    const email = t.nuvioEmail
+        ? escapeHtml(t.nuvioEmail)
+        : `<span style="color:var(--text-muted)">—</span>`;
+    return `<tr data-id="${escapeHtml(t.id)}">
+        <td><div style="font-weight:600;">${name}</div></td>
+        <td><code style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">${escapeHtml(t.id)}</code></td>
+        <td>${email}</td>
+        <td>${assigned}</td>
+        <td>${formatDate(exp)}</td>
+        <td>${statusBadgeHTML(t)}</td>
+        <td>
+            <button class="icon-btn" data-menu-token="${escapeHtml(t.id)}" title="Actions" aria-label="Actions">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+        </td>
+    </tr>`;
+}
+
+function renderCard(t) {
+    const exp = tsToMs(t.expiresAt);
+    const name = t.name || "Unnamed";
+    const assigned = t.assignedTo
+        ? escapeHtml(t.assignedTo)
+        : `<span style="color:var(--text-muted)">Unassigned</span>`;
+    const email = t.nuvioEmail
+        ? escapeHtml(t.nuvioEmail)
+        : `<span style="color:var(--text-muted)">Not configured</span>`;
+    return `<div class="token-card" data-id="${escapeHtml(t.id)}" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;display:flex;flex-direction:column;gap:0.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">
+            <div style="font-weight:600;flex:1;word-break:break-word;">${escapeHtml(name)}</div>
+            ${statusBadgeHTML(t)}
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;word-break:break-all;">${escapeHtml(t.id)}</div>
+        <div style="font-size:0.85rem;display:flex;flex-direction:column;gap:0.25rem;">
+            <div><span style="color:var(--text-muted);">Email:</span> ${email}</div>
+            <div><span style="color:var(--text-muted);">Assigned:</span> ${assigned}</div>
+            <div><span style="color:var(--text-muted);">Expires:</span> ${formatDate(exp)}</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+            <button class="icon-btn" data-menu-token="${escapeHtml(t.id)}" title="Actions" aria-label="Actions">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+        </div>
+    </div>`;
+}
+
+// ── Search & filter ──────────────────────────────────────────────────────────
+function handleSearch() {
+    state.search = searchInput.value;
+    renderTokens();
+}
+
+function setFilter(filter) {
+    state.filter = filter;
+    // highlight active stat card
+    statsGrid.querySelectorAll(".stat-card").forEach(c => c.classList.remove("active-filter"));
+    const active = statsGrid.querySelector(`.stat-card[data-filter="${filter}"]`);
+    if (active) active.classList.add("active-filter");
+
+    if (filter === "all") {
+        filterIndicator.classList.add("hidden");
+    } else {
+        const meta = STATUS_META[filter] || { label: filter };
+        filterText.textContent = `Filtering: ${meta.label}`;
+        filterIndicator.classList.remove("hidden");
+    }
+    renderTokens();
+}
+
+// ── Modal helpers ────────────────────────────────────────────────────────────
+function openModal(id) { $(id).classList.remove("hidden"); }
+function closeModal(id) { $(id).classList.add("hidden"); }
+// expose for inline onclick handlers in HTML
+window.closeModal = closeModal;
+
+function showConfirm(title, message, onConfirm) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    pendingConfirm = onConfirm;
+    openModal("confirm-modal");
+}
+
+confirmYes.addEventListener("click", async () => {
+    const cb = pendingConfirm;
+    pendingConfirm = null;
+    closeModal("confirm-modal");
+    if (typeof cb === "function") {
+        try { await cb(); } catch (e) { showToast("❌ " + e.message); }
+    }
+});
+confirmNo.addEventListener("click", () => {
+    pendingConfirm = null;
+    closeModal("confirm-modal");
 });
 
-bulkGenerateBtn.addEventListener('click', async () => {
-    const text = bulkInput.value.trim();
-    if (!text) return showToast('❌ No input provided.');
-    
-    const lines = text.split('\n').filter(l => l.trim() !== '');
-    
-    bulkGenerateBtn.disabled = true;
-    bulkGenerateBtn.textContent = `Creating 0/${lines.length}...`;
-    
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const line of lines) {
-        const parts = line.split(',');
-        if (parts.length < 2) {
-            failCount++;
-            continue;
-        }
-        const email = parts[0].trim();
-        const pwd = parts.slice(1).join(',').trim(); // in case password has commas
-        
-        try {
-            const randomId = "nuvio_" + Math.random().toString(36).substring(2, 9);
+// ── Action menu (row-menu / card-menu) ───────────────────────────────────────
+function closeActionMenu() {
+    const existing = document.getElementById("action-menu");
+    if (existing) existing.remove();
+    document.removeEventListener("click", closeActionMenu);
+}
 
-            await setDoc(doc(db, "customers", randomId), {
-                name: email,
-                status: 'active',
-                createdAt: serverTimestamp(),
+function openActionMenu(tokenId, anchorEl, kind) {
+    closeActionMenu();
+    const t = state.tokens.find(x => x.id === tokenId);
+    if (!t) return;
+
+    const menu = document.createElement("div");
+    menu.id = "action-menu";
+    menu.className = kind === "card" ? "card-menu" : "row-menu";
+    Object.assign(menu.style, {
+        position: "fixed",
+        zIndex: "9999",
+        minWidth: "180px",
+        background: "rgba(19,19,26,0.98)",
+        backdropFilter: "blur(12px)",
+        border: "1px solid var(--border-light)",
+        borderRadius: "var(--radius-sm)",
+        boxShadow: "var(--shadow-lg)",
+        padding: "6px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "2px"
+    });
+
+    const isAssigned = !!(t.assignedTo && String(t.assignedTo).trim());
+    const items = [
+        { label: "Edit", icon: "✏️", fn: () => openEditModal(t) },
+        { label: "Renew", icon: "⏱️", fn: () => openRenewModal(t) },
+        { label: "Copy Link", icon: "🔗", fn: () => copyTokenLink(t) }
+    ];
+    if (isAssigned) {
+        items.push({ label: "Unassign", icon: "↩️", fn: () => confirmUnassign(t) });
+    } else {
+        items.push({ label: "Assign", icon: "👤", fn: () => openAssignModal(t) });
+    }
+    if (t.status === "active") {
+        items.push({ label: "Block", icon: "🚫", fn: () => confirmBlock(t) });
+    } else {
+        items.push({ label: "Unblock", icon: "✅", fn: () => unblockToken(t) });
+    }
+    items.push({ label: "Delete", icon: "🗑️", danger: true, fn: () => confirmDelete(t) });
+
+    items.forEach(it => {
+        const b = document.createElement("button");
+        b.className = "menu-item" + (it.danger ? " menu-danger" : "");
+        Object.assign(b.style, {
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "8px 12px",
+            background: "transparent",
+            border: "none",
+            color: it.danger ? "#ef4444" : "var(--text-main)",
+            fontSize: "0.85rem",
+            textAlign: "left",
+            cursor: "pointer",
+            borderRadius: "6px",
+            fontFamily: "inherit"
+        });
+        b.innerHTML = `<span style="width:18px;text-align:center;">${it.icon}</span><span>${it.label}</span>`;
+        b.addEventListener("mouseenter", () => {
+            b.style.background = it.danger ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.06)";
+        });
+        b.addEventListener("mouseleave", () => { b.style.background = "transparent"; });
+        b.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeActionMenu();
+            it.fn();
+        });
+        menu.appendChild(b);
+    });
+
+    document.body.appendChild(menu);
+
+    // Position: anchor below the button, aligned to right edge
+    const rect = anchorEl.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let top = rect.bottom + 4;
+    let left = rect.right - menuRect.width;
+    if (top + menuRect.height > window.innerHeight - 8) {
+        top = rect.top - menuRect.height - 4;
+    }
+    if (left < 8) left = 8;
+    menu.style.top = top + "px";
+    menu.style.left = left + "px";
+
+    setTimeout(() => {
+        document.addEventListener("click", closeActionMenu, { once: true });
+    }, 0);
+}
+
+// ── Create token ─────────────────────────────────────────────────────────────
+function openCreateModal() {
+    createEmail.value = "";
+    createPassword.value = "";
+    createName.value = "";
+    openModal("create-modal");
+    setTimeout(() => createEmail.focus(), 50);
+}
+
+createSubmit.addEventListener("click", async () => {
+    const email = createEmail.value.trim();
+    const pwd = createPassword.value.trim();
+    const name = createName.value.trim();
+    if (!email || !pwd) {
+        showToast("❌ Email and password are required.");
+        return;
+    }
+    createSubmit.disabled = true;
+    createSubmit.textContent = "Creating…";
+    try {
+        const id = genTokenId();
+        await setDoc(doc(db, "customers", id), {
+            nuvioEmail: email,
+            nuvioPassword: pwd,
+            name: name || email,
+            assignedTo: null,
+            status: "active",
+            notes: "",
+            createdAt: serverTimestamp()
+        });
+        closeModal("create-modal");
+        showToast("✅ Token created.");
+        copyToClipboard(manifestUrl(id));
+        await loadTokens();
+    } catch (e) {
+        showToast("❌ " + e.message);
+    } finally {
+        createSubmit.disabled = false;
+        createSubmit.textContent = "Create";
+    }
+});
+
+// ── Bulk create ──────────────────────────────────────────────────────────────
+function openBulkModal() {
+    bulkText.value = "";
+    openModal("bulk-modal");
+    setTimeout(() => bulkText.focus(), 50);
+}
+
+bulkSubmit.addEventListener("click", async () => {
+    const text = bulkText.value.trim();
+    if (!text) { showToast("❌ No input provided."); return; }
+    const lines = text.split("\n").filter(l => l.trim() !== "");
+    let ok = 0, fail = 0;
+    bulkSubmit.disabled = true;
+    bulkSubmit.textContent = `Creating 0/${lines.length}…`;
+    for (let i = 0; i < lines.length; i++) {
+        const parts = lines[i].split(",");
+        if (parts.length < 2) { fail++; continue; }
+        const email = parts[0].trim();
+        const pwd = parts.slice(1).join(",").trim();
+        try {
+            const id = genTokenId();
+            await setDoc(doc(db, "customers", id), {
                 nuvioEmail: email,
                 nuvioPassword: pwd,
-                assignedTo: null
+                name: email,
+                assignedTo: null,
+                status: "active",
+                notes: "",
+                createdAt: serverTimestamp()
             });
-            successCount++;
-            bulkGenerateBtn.textContent = `Creating ${successCount}/${lines.length}...`;
-        } catch (err) {
-            console.error("Bulk error:", err);
-            failCount++;
+            ok++;
+        } catch (e) {
+            console.error(e);
+            fail++;
         }
+        bulkSubmit.textContent = `Creating ${i + 1}/${lines.length}…`;
     }
-    
-    bulkModal.classList.add('hidden');
-    bulkGenerateBtn.disabled = false;
-    bulkGenerateBtn.textContent = "Generate All";
-    showToast(`✅ Bulk created: ${successCount} success, ${failCount} failed.`);
-    loadData();
+    bulkSubmit.disabled = false;
+    bulkSubmit.textContent = "Create All";
+    closeModal("bulk-modal");
+    showToast(`✅ Bulk: ${ok} created, ${fail} failed.`);
+    await loadTokens();
 });
 
-window.copyCredentials = (email, pwd) => {
-    const text = `Email: ${email}\nPassword: ${pwd}`;
-    copyToClipboard(text);
-};
+// ── Edit token ───────────────────────────────────────────────────────────────
+function openEditModal(t) {
+    editId.value = t.id;
+    editToken.value = t.id;
+    editEmail.value = t.nuvioEmail || "";
+    editPassword.value = t.nuvioPassword || "";
+    editName.value = t.name || "";
+    editNotes.value = t.notes || "";
+    openModal("edit-modal");
+}
 
-// ── Renew/Toggle/Delete Actions ─────────────────────────────────────────────
-let pendingRenewId = null;
-let pendingRenewCurrentExpiry = null;
+editSubmit.addEventListener("click", async () => {
+    const id = editId.value;
+    if (!id) return;
+    const email = editEmail.value.trim();
+    const pwd = editPassword.value.trim();
+    if (!email || !pwd) {
+        showToast("❌ Email and password are required.");
+        return;
+    }
+    editSubmit.disabled = true;
+    editSubmit.textContent = "Saving…";
+    try {
+        await updateDoc(doc(db, "customers", id), {
+            nuvioEmail: email,
+            nuvioPassword: pwd,
+            name: editName.value.trim(),
+            notes: editNotes.value.trim()
+        });
+        closeModal("edit-modal");
+        showToast("✅ Token updated.");
+        await loadTokens();
+    } catch (e) {
+        showToast("❌ " + e.message);
+    } finally {
+        editSubmit.disabled = false;
+        editSubmit.textContent = "Save";
+    }
+});
 
-window.openRenewModal = (id, name, currentMs) => {
-    pendingRenewId = id;
-    pendingRenewCurrentExpiry = currentMs;
-    renewCustomerName.textContent = name;
-    
-    // Show current expiry
-    const expiryDate = currentMs ? new Date(currentMs) : null;
-    const displayEl = document.getElementById('renew-current-expiry-display');
-    const remainingEl = document.getElementById('renew-days-remaining');
-    
-    if (expiryDate) {
-        displayEl.textContent = expiryDate.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-        const diff = expiryDate.getTime() - Date.now();
+// ── Renew token ──────────────────────────────────────────────────────────────
+function openRenewModal(t) {
+    renewContext = { id: t.id, currentMs: tsToMs(t.expiresAt) };
+    renewId.value = t.id;
+    const cur = renewContext.currentMs;
+    let info = `<div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;">`;
+    info += `<div><strong style="color:var(--text-main);">Token:</strong> <code style="font-family:monospace;">${escapeHtml(t.id)}</code></div>`;
+    if (cur) {
+        info += `<div><strong style="color:var(--text-main);">Current expiry:</strong> ${formatDateTime(cur)}</div>`;
+        const diff = cur - Date.now();
         if (diff > 0) {
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            remainingEl.textContent = `${days} days remaining`;
-            remainingEl.style.color = '#10b981';
+            info += `<div style="color:#10b981;">${days} day${days === 1 ? "" : "s"} remaining</div>`;
         } else {
-            remainingEl.textContent = 'EXPIRED';
-            remainingEl.style.color = '#ef4444';
+            info += `<div style="color:#ef4444;">EXPIRED</div>`;
         }
     } else {
-        displayEl.textContent = 'No expiry set';
-        remainingEl.textContent = '';
+        info += `<div><strong style="color:var(--text-main);">Current expiry:</strong> Not set</div>`;
     }
-    
-    document.getElementById('renew-days-input').value = '7';
-    renewModal.classList.remove('hidden');
-};
+    info += `</div>`;
+    renewInfo.innerHTML = info;
+    renewDays.value = "7";
+    openModal("renew-modal");
+}
 
-// Add days button
-document.getElementById('renew-add-btn').addEventListener('click', async () => {
-    const days = parseInt(document.getElementById('renew-days-input').value, 10);
-    
-    let baseDate = pendingRenewCurrentExpiry ? new Date(pendingRenewCurrentExpiry) : new Date();
-    if (baseDate.getTime() < Date.now()) baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() + days);
-    
-    try {
-        await updateDoc(doc(db, 'customers', pendingRenewId), { expiresAt: baseDate, status: 'active' });
-        showToast(`✅ Added ${days} days.`);
-        renewModal.classList.add('hidden');
-        loadData();
-    } catch (e) {
-        showToast('❌ Failed to add days.');
-    }
-});
-
-// Remove days button
-document.getElementById('renew-remove-btn').addEventListener('click', async () => {
-    const days = parseInt(document.getElementById('renew-days-input').value, 10);
-    
-    let baseDate = pendingRenewCurrentExpiry ? new Date(pendingRenewCurrentExpiry) : new Date();
-    baseDate.setDate(baseDate.getDate() - days);
-    
-    // Don't allow setting expiry before now
-    if (baseDate.getTime() < Date.now()) {
-        baseDate = new Date(); // Set to now (effectively expires immediately)
-    }
-    
-    try {
-        await updateDoc(doc(db, 'customers', pendingRenewId), { expiresAt: baseDate });
-        showToast(`✅ Removed ${days} days.`);
-        renewModal.classList.add('hidden');
-        loadData();
-    } catch (e) {
-        showToast('❌ Failed to remove days.');
-    }
-});
-
-// Quick set buttons (overwrite expiry to exactly N days from now)
-document.querySelectorAll('.quick-set-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const days = parseInt(btn.dataset.days, 10);
-        const newExpiry = new Date();
-        newExpiry.setDate(newExpiry.getDate() + days);
-        
-        try {
-            await updateDoc(doc(db, 'customers', pendingRenewId), { expiresAt: newExpiry, status: 'active' });
-            showToast(`✅ Set to ${days} days from now.`);
-            renewModal.classList.add('hidden');
-            loadData();
-        } catch (e) {
-            showToast('❌ Failed to set expiry.');
-        }
+// Quick-set buttons (7, 30, 90)
+renewModal.querySelectorAll(".renew-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        renewDays.value = btn.dataset.days;
     });
 });
 
-window.toggleStatus = async (id, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
-    if (!confirm(`Are you sure you want to ${newStatus === 'blocked' ? 'block' : 'unblock'} this token?`)) return;
+renewAddBtn.addEventListener("click", async () => {
+    if (!renewContext) return;
+    const days = parseInt(renewDays.value, 10);
+    if (!days || days <= 0) { showToast("❌ Enter a valid number of days."); return; }
+    let base = renewContext.currentMs ? new Date(renewContext.currentMs) : new Date();
+    if (base.getTime() < Date.now()) base = new Date();
+    base.setDate(base.getDate() + days);
+    renewAddBtn.disabled = true;
     try {
-        await updateDoc(doc(db, "customers", id), { status: newStatus });
-        showToast(`✅ Token ${newStatus}.`);
-        loadData();
+        await updateDoc(doc(db, "customers", renewContext.id), {
+            expiresAt: Timestamp.fromDate(base),
+            status: "active"
+        });
+        showToast(`✅ Added ${days} day${days === 1 ? "" : "s"}.`);
+        closeModal("renew-modal");
+        await loadTokens();
     } catch (e) {
-        console.error(e);
-        showToast('❌ Failed to update status.');
+        showToast("❌ " + e.message);
+    } finally {
+        renewAddBtn.disabled = false;
     }
-};
+});
 
-window.unassignToken = async (id) => {
-    if (!confirm(`Are you sure you want to unassign this token?\n\nThis will make it available to be auto-assigned to the next customer.`)) return;
+renewRemoveBtn.addEventListener("click", async () => {
+    if (!renewContext) return;
+    const days = parseInt(renewDays.value, 10);
+    if (!days || days <= 0) { showToast("❌ Enter a valid number of days."); return; }
+    if (!renewContext.currentMs) { showToast("❌ No expiry set to remove from."); return; }
+    let base = new Date(renewContext.currentMs);
+    base.setDate(base.getDate() - days);
+    renewRemoveBtn.disabled = true;
     try {
-        // Clear BOTH assignedTo AND name so the token is fully recycled
-        await updateDoc(doc(db, "customers", id), { assignedTo: null, name: '' });
-        showToast(`✅ Token unassigned and available.`);
-        loadData();
+        await updateDoc(doc(db, "customers", renewContext.id), {
+            expiresAt: Timestamp.fromDate(base)
+        });
+        showToast(`✅ Removed ${days} day${days === 1 ? "" : "s"}.`);
+        closeModal("renew-modal");
+        await loadTokens();
     } catch (e) {
-        console.error(e);
-        showToast('❌ Failed to unassign token.');
+        showToast("❌ " + e.message);
+    } finally {
+        renewRemoveBtn.disabled = false;
     }
-};
+});
 
-window.deleteToken = async (id) => {
-    if (!confirm(`Permanently delete token "${id}"?\n\nThis cannot be undone.`)) return;
+// ── Assign / unassign ────────────────────────────────────────────────────────
+function openAssignModal(t) {
+    assignIdEl.value = t.id;
+    assignEmail.value = "";
+    openModal("assign-modal");
+    setTimeout(() => assignEmail.focus(), 50);
+}
+
+assignSubmit.addEventListener("click", async () => {
+    const id = assignIdEl.value;
+    const email = assignEmail.value.trim();
+    if (!id) return;
+    if (!email) { showToast("❌ Enter a customer email."); return; }
+
+    // Reassignment check — is this email already assigned to a different token?
+    const conflict = state.tokens.find(t => t.id !== id && t.assignedTo && String(t.assignedTo).trim().toLowerCase() === email.toLowerCase());
+    if (conflict) {
+        closeModal("assign-modal");
+        showConfirm(
+            "Reassign Customer?",
+            `"${email}" is already assigned to token "${conflict.id}". Assigning here will NOT automatically unassign the other token. Continue anyway?`,
+            async () => {
+                await doAssign(id, email);
+            }
+        );
+        return;
+    }
+    await doAssign(id, email);
+});
+
+async function doAssign(id, email) {
     try {
-        await deleteDoc(doc(db, "customers", id));
-        showToast('🗑️ Token deleted.');
-        loadData();
+        await updateDoc(doc(db, "customers", id), {
+            assignedTo: email,
+            status: "active"
+        });
+        closeModal("assign-modal");
+        showToast(`✅ Assigned to ${email}.`);
+        await loadTokens();
     } catch (e) {
-        console.error(e);
-        showToast('❌ Failed to delete token.');
+        showToast("❌ " + e.message);
     }
-};
+}
 
-// ── Links Copy Modal Logic ──────────────────────────────────────────────────
-const diagContainer = document.getElementById('diagnostic-console-container');
-const diagConsole = document.getElementById('diagnostic-console');
-const clearDiagBtn = document.getElementById('clear-diagnostics');
+function confirmUnassign(t) {
+    showConfirm(
+        "Unassign Token?",
+        `Remove the assignment from "${t.assignedTo}"? The customer will lose access on next login.`,
+        async () => {
+            try {
+                await updateDoc(doc(db, "customers", t.id), { assignedTo: null });
+                showToast("✅ Token unassigned.");
+                await loadTokens();
+            } catch (e) {
+                showToast("❌ " + e.message);
+            }
+        }
+    );
+}
 
-if (clearDiagBtn) {
-    clearDiagBtn.addEventListener('click', () => {
-        diagContainer.classList.add('hidden');
+// ── Block / unblock ──────────────────────────────────────────────────────────
+function confirmBlock(t) {
+    showConfirm(
+        "Block Token?",
+        `Block token "${t.id}"? The customer will be denied access immediately.`,
+        async () => {
+            try {
+                await updateDoc(doc(db, "customers", t.id), { status: "blocked" });
+                showToast("✅ Token blocked.");
+                await loadTokens();
+            } catch (e) {
+                showToast("❌ " + e.message);
+            }
+        }
+    );
+}
+
+async function unblockToken(t) {
+    try {
+        await updateDoc(doc(db, "customers", t.id), { status: "active" });
+        showToast("✅ Token unblocked.");
+        await loadTokens();
+    } catch (e) {
+        showToast("❌ " + e.message);
+    }
+}
+
+// ── Delete ───────────────────────────────────────────────────────────────────
+function confirmDelete(t) {
+    showConfirm(
+        "Delete Token?",
+        `Permanently delete token "${t.id}"? This cannot be undone.`,
+        async () => {
+            try {
+                await deleteDoc(doc(db, "customers", t.id));
+                showToast("🗑️ Token deleted.");
+                await loadTokens();
+            } catch (e) {
+                showToast("❌ " + e.message);
+            }
+        }
+    );
+}
+
+// ── Copy link ────────────────────────────────────────────────────────────────
+function copyTokenLink(t) {
+    copyToClipboard(manifestUrl(t.id));
+    showToast("🔗 Manifest link copied.");
+}
+
+// ── Export CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+    const list = getFilteredTokens();
+    if (list.length === 0) { showToast("❌ Nothing to export."); return; }
+    const headers = ["Token ID", "Name", "Nuvio Email", "Nuvio Password", "Assigned To", "Status", "Category", "Expires At", "Created At", "Notes"];
+    const rows = list.map(t => {
+        const cat = categorizeToken(t);
+        return [
+            t.id,
+            t.name || "",
+            t.nuvioEmail || "",
+            t.nuvioPassword || "",
+            t.assignedTo || "",
+            t.status || "",
+            cat,
+            tsToMs(t.expiresAt) ? new Date(tsToMs(t.expiresAt)).toISOString() : "",
+            tsToMs(t.createdAt) ? new Date(tsToMs(t.createdAt)).toISOString() : "",
+            t.notes || ""
+        ].map(csvCell).join(",");
     });
+    const csv = headers.join(",") + "\n" + rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nuvio-tokens-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`✅ Exported ${list.length} token(s).`);
 }
 
-function logDiag(msg, type = 'info') {
-    const el = document.createElement('div');
-    el.className = `log-${type}`;
-    el.textContent = `> ${msg}`;
-    diagConsole.appendChild(el);
-    diagConsole.scrollTop = diagConsole.scrollHeight;
+function csvCell(v) {
+    const s = v == null ? "" : String(v);
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
 }
 
-window.runVerifier = async (url, btnEl) => {
-    diagContainer.classList.remove('hidden');
-    diagConsole.innerHTML = '';
-    logDiag(`Starting diagnostic for: ${url}`, 'info');
+// ── Promo codes ──────────────────────────────────────────────────────────────
+function openPromoModal() {
+    promoDaysInput.value = "7";
+    openModal("promo-modal");
+    loadPromos();
+}
 
-    if (btnEl) {
-        btnEl.dataset.originalHtml = btnEl.innerHTML;
-        btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btnEl.disabled = true;
-    }
-
-    let isSuccess = false;
-
+generatePromoBtn.addEventListener("click", async () => {
+    const days = parseInt(promoDaysInput.value, 10);
+    if (!days || days <= 0) { showToast("❌ Enter valid days."); return; }
+    generatePromoBtn.disabled = true;
+    generatePromoBtn.textContent = "Generating…";
     try {
-        logDiag('Fetching manifest.json...', 'info');
-        const start = Date.now();
-        const res = await fetch(url);
-        const ms = Date.now() - start;
-
-        if (!res.ok) {
-            logDiag(`HTTP Error: ${res.status} ${res.statusText}`, 'error');
-            throw new Error('HTTP Error');
-        }
-
-        const manifest = await res.json();
-        logDiag(`SUCCESS! Fetched in ${ms}ms`, 'info');
-        logDiag(`Addon Name: ${manifest.name}`, 'info');
-        logDiag(`Catalogs provided: ${manifest.catalogs ? manifest.catalogs.length : 0}`, 'info');
-
-        if (manifest.id && manifest.id.includes('bundle')) {
-            logDiag('\nMaster Bundle detected. Running stream stress test...', 'info');
-            logDiag('Fetching streams for tt0111161 (The Shawshank Redemption)...', 'info');
-            
-            const streamUrl = url.replace('manifest.json', 'stream/movie/tt0111161.json');
-            const sStart = Date.now();
-            const sRes = await fetch(streamUrl);
-            const sMs = Date.now() - sStart;
-
-            if (!sRes.ok) {
-                logDiag(`Stream Error: ${sRes.status} ${sRes.statusText}`, 'error');
-                throw new Error('Stream Error');
-            }
-
-            const streamData = await sRes.json();
-            const streamCount = streamData.streams ? streamData.streams.length : 0;
-            logDiag(`SUCCESS! Fetched streams in ${sMs}ms`, 'info');
-            logDiag(`Total streams aggregated: ${streamCount}`, 'info');
-            
-            if (streamCount === 0) {
-                logDiag('WARNING: No streams returned. Are your global addons configured correctly?', 'warn');
-            }
-        }
-
-        logDiag('\n✅ Diagnostic complete.', 'info');
-        isSuccess = true;
-    } catch (e) {
-        logDiag(`Fetch failed: ${e.message}`, 'error');
-        isSuccess = false;
-    }
-
-    if (btnEl) {
-        btnEl.innerHTML = isSuccess ? '<i class="fas fa-check" style="color:var(--text-green);"></i>' : '<i class="fas fa-times" style="color:var(--text-red);"></i>';
-        setTimeout(() => {
-            btnEl.innerHTML = btnEl.dataset.originalHtml;
-            btnEl.disabled = false;
-        }, 2000);
-    }
-};
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text)
-        .then(() => showToast('🔗 Link copied to clipboard!'))
-        .catch(err => {
-            console.error('Copy fail', err);
-            // Fallback for insecure environments
-            const input = document.createElement('input');
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            input.remove();
-            showToast('🔗 Link copied to clipboard!');
-        });
-}
-
-window.copyLink = (btnEl, id, customerName) => {
-    const addons = ADDONS;
-    // Use production URL so links work correctly even when admin is accessed from localhost
-    const baseUrl = 'https://nuviostreamapi.vercel.app';
-
-    // Set header info
-    document.getElementById('links-customer-name').textContent = customerName;
-
-    // Populate master bundle
-    const masterUrl = `${baseUrl}/${id}/manifest.json`;
-    const masterInput = document.getElementById('master-link-input');
-    masterInput.value = masterUrl;
-    
-    const masterCopyBtn = document.querySelector('.copy-btn-action[data-input-id="master-link-input"]');
-    if (masterCopyBtn) masterCopyBtn.onclick = () => copyToClipboard(masterUrl);
-    
-    const masterTestBtn = document.querySelector('.test-btn-action[data-input-id="master-link-input"]');
-    if (masterTestBtn) masterTestBtn.onclick = function() { window.runVerifier(masterUrl, this); };
-
-    // Populate individual links
-    const container = document.getElementById('individual-links-container');
-    container.innerHTML = '';
-
-    if (addons.length === 0) {
-        container.innerHTML = `<div class="no-addons-warning">No global addons configured yet. Open Global Settings to add them.</div>`;
-    } else {
-        addons.forEach(addon => {
-            const routeName = addon.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (routeName) {
-                const addonUrl = `${baseUrl}/${id}/${routeName}/manifest.json`;
-
-                const item = document.createElement('div');
-                item.className = 'addon-link-item';
-
-                const label = document.createElement('div');
-                label.className = 'addon-link-label';
-                label.textContent = addon.name;
-                item.appendChild(label);
-
-                const group = document.createElement('div');
-                group.className = 'copy-input-group';
-
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'form-input link-preview-input';
-                input.value = addonUrl;
-                input.readOnly = true;
-                group.appendChild(input);
-
-                const testBtn = document.createElement('button');
-                testBtn.className = 'btn btn-outline btn-sm';
-                testBtn.textContent = 'Test';
-                testBtn.onclick = function() { window.runVerifier(addonUrl, this); };
-                group.appendChild(testBtn);
-
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'btn btn-glow btn-sm';
-                copyBtn.textContent = 'Copy';
-                copyBtn.onclick = () => copyToClipboard(addonUrl);
-                group.appendChild(copyBtn);
-
-                item.appendChild(group);
-                container.appendChild(item);
-            }
-        });
-    }
-    
-    // Toggle advanced individual links
-    const toggleBtn = document.getElementById('toggle-individual-links');
-    const wrapper = document.getElementById('individual-links-wrapper');
-    if (toggleBtn && wrapper) {
-        // Reset state when opening modal
-        wrapper.classList.add('hidden');
-        toggleBtn.textContent = 'Show Advanced Individual Links';
-        
-        // Remove old listeners to prevent stacking
-        const newToggleBtn = toggleBtn.cloneNode(true);
-        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-        
-        newToggleBtn.addEventListener('click', () => {
-            wrapper.classList.toggle('hidden');
-            if (wrapper.classList.contains('hidden')) {
-                newToggleBtn.textContent = 'Show Advanced Individual Links';
-            } else {
-                newToggleBtn.textContent = 'Hide Advanced Individual Links';
-            }
-        });
-    }
-
-    document.getElementById('links-modal').classList.remove('hidden');
-};
-
-// ── Expiry Helpers ──────────────────────────────────────────────────────────
-function getExpiryInfo(expiresAt) {
-    if (!expiresAt) return { text: 'No expiry', daysLabel: null, isExpired: false };
-
-    let expDate;
-    if (typeof expiresAt.toMillis === 'function') {
-        expDate = new Date(expiresAt.toMillis());
-    } else if (expiresAt instanceof Date) {
-        expDate = expiresAt;
-    } else if (expiresAt.seconds) {
-        expDate = new Date(expiresAt.seconds * 1000);
-    } else {
-        expDate = new Date(expiresAt);
-    }
-
-    const dateStr = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const now = Date.now();
-    const diff = expDate.getTime() - now;
-    const days = diff / (1000 * 3600 * 24);
-
-    if (days < 0) {
-        return { text: dateStr, daysLabel: 'Expired', isExpired: true };
-    }
-
-    let daysLabel = days < 1 ? '< 1d left' : `${Math.ceil(days)}d left`;
-    return { text: dateStr, daysLabel, isExpired: false };
-}
-
-
-
-// ── Load Data ───────────────────────────────────────────────────────────────
-async function loadData() {
-    spinner.style.display = 'block';
-    noCustomers.classList.add('hidden');
-
-    try {
-        // Addons are hardcoded — no Firestore read needed for global settings
-
-        // 2. Fetch customers
-        const snapshot = await getDocs(customersRef);
-        spinner.style.display = 'none';
-        tbody.innerHTML = '';
-
-        
-        let totalCount = snapshot.size;
-        let availableCount = 0;
-        let assignedCount = 0;
-        let blockedOrExpiredCount = 0;
-
-        if (snapshot.empty) {
-            noCustomers.classList.remove('hidden');
-            statTotal.textContent   = 0;
-            statAvailable.textContent  = 0;
-            statAssigned.textContent = 0;
-            statBlocked.textContent = 0;
-            return;
-        }
-
-        noCustomers.classList.add('hidden');
-
-        snapshot.forEach((docSnap) => {
-            const data   = docSnap.data();
-            const id     = docSnap.id;
-            const name   = data.name   || 'Unnamed';
-            const status = data.status || 'blocked';
-
-            const notes  = data.notes || '';
-            const assignedTo = data.assignedTo || null;
-            const nuvioEmail = data.nuvioEmail || '';
-            const nuvioPassword = data.nuvioPassword || '';
-            
-            const expiry = getExpiryInfo(data.expiresAt);
-            const isBlocked  = status !== 'active';
-            const isExpired  = expiry.isExpired;
-            const isInactive = isBlocked || isExpired;
-
-            // Calculate stats — treat null AND empty-string assignedTo as "not assigned"
-            const isAssigned = assignedTo !== null && assignedTo !== '';
-            if (isInactive) {
-                blockedOrExpiredCount++;
-            } else if (isAssigned) {
-                assignedCount++;
-            } else if (!isAssigned && nuvioEmail !== '') {
-                availableCount++;
-            } else {
-                // unconfigured
-            }
-
-            // Badges
-            let statusBadge = isExpired ? `<span class="status-badge status-blocked" style="cursor:not-allowed;" data-tip="Cannot unblock expired token">Expired</span>` :
-                              isBlocked ? `<span class="status-badge status-blocked" style="cursor:pointer;" data-tip="Click to Unblock" onclick="window.toggleStatus('${id}', '${status}')">Blocked</span>` :
-                              `<span class="status-badge status-active" style="cursor:pointer;" data-tip="Click to Block" onclick="window.toggleStatus('${id}', '${status}')">Active</span>`;
-
-            let assignedBadge;
-            let unassignBtn = '';
-            let credentialsBtn = '';
-            
-            if (assignedTo === null || assignedTo === '') {
-                assignedBadge = `<span class="status-badge status-active" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">🟢 Available</span>`;
-            } else {
-                // Show the FULL email (not truncated) so the admin can actually
-                // see who has the account. Add a copy button for quick support.
-                const safeAssigned = String(assignedTo).replace(/'/g, "\\'");
-                assignedBadge = `
-                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                        <span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">🔴 Assigned</span>
-                        <span style="font-size:0.8rem;color:var(--text-muted);word-break:break-all;max-width:180px;">${String(assignedTo).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]))}</span>
-                        <button class="btn-icon" data-tip="Copy customer email" onclick="navigator.clipboard.writeText('${safeAssigned}');this.innerHTML='✓';setTimeout(()=>this.innerHTML='<svg width=14 height=14 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'9\' y=\'9\' width=\'13\' height=\'13\' rx=\'2\' ry=\'2\'></rect><path d=\'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\'></path></svg>',1500)" style="padding:2px;min-width:auto;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
-                    </div>
-                `;
-                unassignBtn = `
-                    <button class="btn-icon" data-tip="Unassign" onclick="window.unassignToken('${id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                    </button>
-                `;
-                if (nuvioEmail && nuvioPassword) {
-                    credentialsBtn = `
-                        <button class="btn-icon" data-tip="Copy Credentials" onclick="window.copyCredentials('${nuvioEmail.replace(/'/g, "\'")}', '${nuvioPassword.replace(/'/g, "\'")}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
-                    `;
-                }
-            }
-
-            const expiresMillis = data.expiresAt ? data.expiresAt.toMillis() : 0;
-            const dataStr = encodeURIComponent(JSON.stringify(data));
-
-            const tr = document.createElement('tr');
-            tr.dataset.status = isInactive ? 'blocked' : 'active';
-            tr.dataset.assigned = (!assignedTo || assignedTo === '') ? 'null' : 'assigned';
-            tr.dataset.configured = nuvioEmail === '' ? 'unconfigured' : 'configured';
-            
-            const safeNameHTML = String(name).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
-            const safeNotesHTML = String(notes).replace(/[&<>'"]/g, tag => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[tag]));
-            const safeNameJS = String(name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-
-            tr.innerHTML = `
-                <td class="cell-customer" data-label="Customer Name">
-                    <div class="td-content">
-                        <div>${(!assignedTo || assignedTo === '') ? '<span style="color:var(--text-muted)">— Not assigned —</span>' : safeNameHTML}</div>
-                        ${notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; white-space: pre-wrap; word-break: break-word;">${safeNotesHTML}</div>` : ''}
-                    </div>
-                </td>
-                <td data-label="Token"><span class="cell-token td-content">${id}</span></td>
-                <td data-label="Nuvio Email" class="cell-email"><div class="td-content" style="word-break: break-all;">${nuvioEmail || '<span style="color:var(--text-muted)">— Not set —</span>'}</div></td>
-                <td data-label="Nuvio Password"><div class="td-content" style="word-break: break-all;">${nuvioPassword || '—'}</div></td>
-                <td class="cell-assigned" data-label="Assigned To"><div class="td-content">${assignedBadge}</div></td>
-                <td data-label="Expires">
-                    <div class="td-content">
-                        <div>${expiry.text}</div>
-                        ${expiry.daysLabel ? `<div style="font-size:0.8rem;color:var(--text-muted);">${expiry.daysLabel}</div>` : ''}
-                    </div>
-                </td>
-                <td data-label="Status"><div class="td-content">${statusBadge}</div></td>
-                <td data-label="Actions">
-                    <div class="action-buttons">
-                        ${credentialsBtn}
-                        ${unassignBtn}
-                        <button class="btn-icon" data-tip="Edit" onclick="window.openEditModal('${id}', '${dataStr}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button class="btn-icon btn-copy" data-tip="Copy Link" onclick="window.copyLink(this, '${id}', '${safeNameJS.replace(/"/g, '&quot;')}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                        </button>
-                        <button class="btn-icon" data-tip="Renew" onclick="window.openRenewModal('${id}', '${safeNameJS.replace(/"/g, '&quot;')}', ${expiresMillis})">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                        </button>
-                        <button class="btn-icon text-red" data-tip="Delete" onclick="window.deleteToken('${id}')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                    </div>
-                </td>
-            `;
-
-            tbody.appendChild(tr);
-        });
-
-        // Calculate stats from loaded data (ZERO extra Firestore reads)
-        let total = 0, available = 0, assigned = 0, expired = 0;
-        document.querySelectorAll('#customers-body tr').forEach(row => {
-            total++;
-            const assignedCell = row.querySelector('.cell-assigned');
-            const statusCell = row.dataset.status;
-            
-            if (assignedCell && assignedCell.dataset.assigned === 'null') {
-                available++;
-            } else if (assignedCell && assignedCell.dataset.assigned === 'assigned') {
-                assigned++;
-            }
-            
-            if (statusCell === 'blocked') {
-                expired++;
-            } else {
-                // Check if expired by date
-                const expiryText = row.querySelector('[data-label="Expires"] div')?.textContent || '';
-                if (expiryText.toLowerCase().includes('expired')) {
-                    expired++;
-                }
-            }
-        });
-
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-available').textContent = available;
-        document.getElementById('stat-assigned').textContent = assigned;
-        document.getElementById('stat-expired').textContent = expired;
-        
-        
-        // Trigger search filter again in case data changed while searching
-        const e = new Event('input');
-        document.getElementById('roster-search').dispatchEvent(e);
-        
-    } catch (err) {
-        console.error(err);
-        showToast('❌ Failed to load database.');
-    }
-}
-
-// ── Roster Filtering & Search ────────────────────────────────────────────────
-let currentFilter = 'all'; 
-
-function applyFilters() {
-    const searchTerm = document.getElementById('roster-search')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#customers-body tr');
-    let visibleCount = 0;
-    
-    rows.forEach(row => {
-        const customerCell = row.querySelector('.cell-customer');
-        const tokenCell = row.querySelector('.cell-token');
-        const emailCell = row.querySelector('.cell-email');
-        if (!customerCell || !tokenCell) return;
-
-        const name = customerCell.textContent.toLowerCase();
-        const id = tokenCell.textContent.toLowerCase();
-        const email = emailCell ? emailCell.textContent.toLowerCase() : '';
-        const assignedId = row.querySelector('.cell-assigned').textContent.toLowerCase();
-        
-        const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm) || email.includes(searchTerm) || assignedId.includes(searchTerm);
-        
-        const status = row.dataset.status; // 'active' or 'blocked'
-        const assignedStatus = row.dataset.assigned; // 'assigned' or 'null'
-        const configuredStatus = row.dataset.configured; // 'configured' or 'unconfigured'
-        const expiryText = row.querySelector('[data-label="Expires"] div')?.textContent || '';
-        
-        let matchesFilter = true;
-        
-        if (currentFilter === 'available') {
-            if (assignedStatus !== 'null' || configuredStatus === 'unconfigured' || status === 'blocked') matchesFilter = false;
-        } else if (currentFilter === 'assigned') {
-            if (assignedStatus !== 'assigned') matchesFilter = false;
-        } else if (currentFilter === 'unconfigured') {
-            if (configuredStatus !== 'unconfigured') matchesFilter = false;
-        } else if (currentFilter === 'blocked') {
-            if (status !== 'blocked') matchesFilter = false;
-        }
-        
-        // Add stat filter checks
-        if (currentStatFilter === 'available' && assignedStatus !== 'null') matchesFilter = false;
-        if (currentStatFilter === 'assigned' && assignedStatus !== 'assigned') matchesFilter = false;
-        if (currentStatFilter === 'expired' && status !== 'blocked' && !expiryText.toLowerCase().includes('expired')) matchesFilter = false;
-        
-        if (matchesSearch && matchesFilter) {
-            row.classList.remove('hidden');
-            visibleCount++;
-        } else {
-            row.classList.add('hidden');
-        }
-    });
-    
-    if (visibleCount === 0 && rows.length > 0) {
-        noCustomers.querySelector('p').textContent = "No matching customers found.";
-        noCustomers.classList.remove('hidden');
-    } else if (rows.length === 0) {
-        noCustomers.querySelector('p').textContent = "No customers found. Create a token to get started!";
-        noCustomers.classList.remove('hidden');
-    } else {
-        noCustomers.classList.add('hidden');
-    }
-}
-
-// Bind filter buttons
-document.querySelectorAll('.btn-filter').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.btn-filter').forEach(b => {
-            b.classList.remove('active');
-            b.classList.add('btn-outline');
-        });
-        btn.classList.add('active');
-        btn.classList.remove('btn-outline');
-        currentFilter = btn.dataset.filter;
-        
-        // Sync the stat card filter back to 'all' when a top filter is clicked
-        currentStatFilter = 'all';
-        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-        const totalFilterEl = document.getElementById('filter-total');
-        if (totalFilterEl) totalFilterEl.classList.add('active-filter');
-        
-        applyFilters();
-    });
-});
-
-// Stat card click filters
-let currentStatFilter = 'all';
-
-function syncTopFilter() {
-    currentFilter = 'all';
-    document.querySelectorAll('.btn-filter').forEach(b => { 
-        b.classList.remove('active'); 
-        b.classList.add('btn-outline'); 
-    });
-    const allBtn = document.querySelector('.btn-filter[data-filter="all"]');
-    if (allBtn) {
-        allBtn.classList.add('active');
-        allBtn.classList.remove('btn-outline');
-    }
-}
-
-document.getElementById('filter-total').addEventListener('click', () => {
-    currentStatFilter = 'all';
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-total').classList.add('active-filter');
-    syncTopFilter();
-    applyFilters();
-});
-
-document.getElementById('filter-available').addEventListener('click', () => {
-    currentStatFilter = 'available';
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-available').classList.add('active-filter');
-    syncTopFilter();
-    applyFilters();
-});
-
-document.getElementById('filter-assigned').addEventListener('click', () => {
-    currentStatFilter = 'assigned';
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-assigned').classList.add('active-filter');
-    syncTopFilter();
-    applyFilters();
-});
-
-document.getElementById('filter-expired').addEventListener('click', () => {
-    currentStatFilter = 'expired';
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
-    document.getElementById('filter-expired').classList.add('active-filter');
-    syncTopFilter();
-    applyFilters();
-});
-
-document.getElementById('roster-search')?.addEventListener('input', applyFilters);
-
-document.getElementById('refresh-data-btn')?.addEventListener('click', () => {
-    loadData();
-});
-
-// ── Login Setup ─────────────────────────────────────────────────────────────
-function enterDashboard() {
-    loginOverlay.classList.remove('active');
-    dashboard.classList.remove('hidden');
-    loadData();
-}
-
-if (localStorage.getItem('nuvio_auth') === ADMIN_PASSWORD_HASH) {
-    enterDashboard();
-}
-
-loginBtn.addEventListener('click', async () => {
-    const inputHash = await hashStr(passwordInput.value);
-    if (inputHash === ADMIN_PASSWORD_HASH) {
-        localStorage.setItem('nuvio_auth', ADMIN_PASSWORD_HASH);
-        enterDashboard();
-    } else {
-        loginError.textContent = "Incorrect password.";
-        passwordInput.value = '';
-    }
-});
-
-passwordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') loginBtn.click();
-});
-window.openEditModal = openEditModal;
-
-// ── PROMO CODES ─────────────────────────────────────────────────────────────
-
-window.openPromoModal = async () => {
-    document.getElementById('promo-modal').classList.remove('hidden');
-    await loadPromoCodes();
-};
-
-document.getElementById('open-promo-modal')?.addEventListener('click', () => {
-    window.openPromoModal();
-});
-
-async function loadPromoCodes() {
-    const listEl = document.getElementById('promo-codes-list');
-    listEl.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:1rem;">Loading...</p>';
-    try {
-        const snapshot = await getDocs(collection(db, "promoCodes"));
-        if (snapshot.empty) {
-            listEl.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:1rem;">No promo codes yet. Generate one above!</p>';
-            return;
-        }
-        const codes = [];
-        snapshot.forEach(docSnap => {
-            codes.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        // Sort: active first, then by createdAt desc
-        codes.sort((a, b) => {
-            if (a.status === 'active' && b.status === 'used') return -1;
-            if (a.status === 'used' && b.status === 'active') return 1;
-            return 0;
-        });
-        listEl.innerHTML = codes.map(c => {
-            const status = c.status === 'used'
-                ? `<span class="status-badge status-blocked">Used by ${c.assignedTo || 'unknown'}</span>`
-                : `<span class="status-badge status-active">Active</span>`;
-            const redeemed = c.redeemedAt
-                ? `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem;">Redeemed: ${new Date(c.redeemedAt.toMillis ? c.redeemedAt.toMillis() : c.redeemedAt).toLocaleDateString()}</div>`
-                : '';
-            return `
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem; border:1px solid var(--border); border-radius:0.5rem; margin-bottom:0.5rem; background:rgba(255,255,255,0.02);">
-                <div>
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <code style="font-size:0.9rem; font-weight:600; color:#a78bfa;">${c.id}</code>
-                        ${status}
-                    </div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">${c.days || 7} days</div>
-                    ${redeemed}
-                </div>
-                <div style="display:flex; gap:0.25rem;">
-                    <button onclick="copyPromoCode('${c.id}')" class="btn-icon" title="Copy" style="width:32px; height:32px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--text-muted);">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    </button>
-                    <button onclick="deletePromoCode('${c.id}')" class="btn-icon" title="Delete" style="width:32px; height:32px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:6px; cursor:pointer; color:#ef4444;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
-    } catch (err) {
-        listEl.innerHTML = '<p style="text-align:center; color:#ef4444; padding:1rem;">Failed to load promo codes.</p>';
-    }
-}
-
-window.copyPromoCode = (code) => {
-    navigator.clipboard.writeText(code);
-    showToast(`✅ Copied: ${code}`);
-};
-
-window.deletePromoCode = async (code) => {
-    if (!confirm(`Delete promo code "${code}"?`)) return;
-    try {
-        await deleteDoc(doc(db, "promoCodes", code));
-        showToast(`✅ Deleted: ${code}`);
-        loadPromoCodes();
-    } catch (e) {
-        showToast('❌ Failed to delete.');
-    }
-};
-
-document.getElementById('generate-promo-btn')?.addEventListener('click', async () => {
-    const days = parseInt(document.getElementById('promo-days-input').value) || 7;
-    const btn = document.getElementById('generate-promo-btn');
-    btn.disabled = true;
-    btn.textContent = 'Generating...';
-
-    // Generate random code: NUVRIO-XXXX-XXXX
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const part1 = Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-    const part2 = Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-    const code = `NUVRIO-${part1}-${part2}`;
-
-    try {
+        const code = genPromoCode();
         await setDoc(doc(db, "promoCodes", code), {
-            days: days,
-            status: 'active',
+            days,
+            status: "active",
             assignedTo: null,
             redeemedAt: null,
-            createdAt: serverTimestamp(),
+            createdAt: serverTimestamp()
         });
-        showToast(`✅ Generated: ${code}`);
-        document.getElementById('promo-days-input').value = '7';
-        loadPromoCodes();
+        showToast(`✅ Promo code generated: ${code}`);
+        copyToClipboard(code);
+        await loadPromos();
     } catch (e) {
-        showToast('❌ Failed to generate promo code.');
+        showToast("❌ " + e.message);
     } finally {
-        btn.disabled = false;
-        btn.textContent = 'Generate';
+        generatePromoBtn.disabled = false;
+        generatePromoBtn.textContent = "Generate";
     }
 });
+
+function renderPromoList() {
+    if (state.promos.length === 0) {
+        promoCodesList.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:1rem;">No promo codes yet. Generate one above!</p>`;
+        return;
+    }
+    promoCodesList.innerHTML = state.promos.map(renderPromoItem).join("");
+    promoCodesList.querySelectorAll("[data-promo-copy]").forEach(b => {
+        b.addEventListener("click", () => {
+            copyToClipboard(b.dataset.promoCopy);
+            showToast("📋 Promo code copied.");
+        });
+    });
+    promoCodesList.querySelectorAll("[data-promo-delete]").forEach(b => {
+        b.addEventListener("click", () => {
+            const code = b.dataset.promoDelete;
+            confirmDeletePromo(code);
+        });
+    });
+}
+
+function renderPromoItem(p) {
+    const statusColor = p.status === "active" ? "#10b981" : (p.status === "used" ? "#9ca3af" : "#f59e0b");
+    const redeemed = p.redeemedAt
+        ? `<span style="color:var(--text-muted);">by ${escapeHtml(p.assignedTo || "—")} on ${formatDate(tsToMs(p.redeemedAt))}</span>`
+        : "";
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.75rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:0.5rem;">
+        <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                <code style="font-family:monospace;font-weight:600;font-size:0.9rem;">${escapeHtml(p.id)}</code>
+                <span style="padding:2px 8px;border-radius:999px;font-size:0.68rem;font-weight:600;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}55;text-transform:uppercase;">${escapeHtml(p.status || "active")}</span>
+                <span style="padding:2px 8px;border-radius:999px;font-size:0.68rem;font-weight:600;background:rgba(124,58,237,0.18);color:#c4b5fd;border:1px solid rgba(124,58,237,0.4);">${p.days}d</span>
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">Created ${formatDate(tsToMs(p.createdAt))} ${redeemed}</div>
+        </div>
+        <div style="display:flex;gap:0.25rem;flex-shrink:0;">
+            <button class="icon-btn" data-promo-copy="${escapeHtml(p.id)}" title="Copy code" aria-label="Copy">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <button class="icon-btn" data-promo-delete="${escapeHtml(p.id)}" title="Delete code" aria-label="Delete" style="color:#ef4444;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+        </div>
+    </div>`;
+}
+
+function confirmDeletePromo(code) {
+    showConfirm(
+        "Delete Promo Code?",
+        `Permanently delete promo code "${code}"? This cannot be undone.`,
+        async () => {
+            try {
+                await deleteDoc(doc(db, "promoCodes", code));
+                showToast("🗑️ Promo code deleted.");
+                await loadPromos();
+            } catch (e) {
+                showToast("❌ " + e.message);
+            }
+        }
+    );
+}
+
+// ── Event wiring ─────────────────────────────────────────────────────────────
+loginBtn.addEventListener("click", tryLogin);
+passwordInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") tryLogin();
+});
+logoutBtn.addEventListener("click", logout);
+refreshBtn.addEventListener("click", async () => {
+    refreshBtn.disabled = true;
+    await Promise.all([loadTokens(), loadPromos()]);
+    refreshBtn.disabled = false;
+    showToast("🔄 Refreshed.");
+});
+
+searchInput.addEventListener("input", handleSearch);
+
+createBtn.addEventListener("click", openCreateModal);
+bulkBtn.addEventListener("click", openBulkModal);
+promoBtn.addEventListener("click", openPromoModal);
+exportBtn.addEventListener("click", exportCSV);
+
+clearFilter.addEventListener("click", () => setFilter("all"));
+
+// Stat-card click → filter
+statsGrid.querySelectorAll(".stat-card").forEach(card => {
+    card.addEventListener("click", () => {
+        const f = card.dataset.filter;
+        if (state.filter === f) {
+            setFilter("all");
+        } else {
+            setFilter(f);
+        }
+    });
+    card.style.cursor = "pointer";
+});
+
+// Close action menu on escape / scroll / resize
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeActionMenu();
+});
+window.addEventListener("scroll", closeActionMenu, true);
+window.addEventListener("resize", closeActionMenu);
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+(function init() {
+    if (localStorage.getItem("nuvio_admin_auth") === "1") {
+        state.authed = true;
+        showApp();
+    } else {
+        loginOverlay.classList.remove("hidden");
+        appEl.classList.add("hidden");
+        setTimeout(() => passwordInput.focus(), 100);
+    }
+})();
