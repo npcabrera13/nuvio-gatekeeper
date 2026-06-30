@@ -387,14 +387,15 @@ window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 // ── Create ──
 document.getElementById('create-btn').addEventListener('click', () => {
     ['create-email','create-password','create-name'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('create-days').value = '30';
     openModal('create-modal');
 });
 document.getElementById('create-submit').addEventListener('click', async () => {
     const email = document.getElementById('create-email').value.trim();
     const password = document.getElementById('create-password').value.trim();
     const name = document.getElementById('create-name').value.trim();
-    const days = parseInt(document.getElementById('create-days').value) || 30;
+    // Days field removed from UI — slot defaults to 30-day shelf life.
+    // Real duration is set when the token is assigned or a promo code is redeemed.
+    const days = 30;
     if (!email || !password) { showToast('Email and password required'); return; }
 
     // Check for duplicate Nuvio email
@@ -636,6 +637,138 @@ document.getElementById('clear-filter')?.addEventListener('click', () => {
 // ── Refresh & Logout ──
 document.getElementById('refresh-btn').addEventListener('click', loadTokens);
 document.getElementById('logout-btn').addEventListener('click', logout);
+
+// ── Promo Codes ──
+// Collection: promoCodes/{code}
+//   code: "NUVIO-XXXXXX", days: 7, createdAt: Timestamp, createdBy: "admin"
+// Single-use: deleted by api/redeem.js when a customer redeems it.
+let allPromoCodes = [];
+
+function generatePromoCodeString() {
+    // Unambiguous alphabet (no 0/O/1/I/L)
+    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const pick = (n) => Array.from({length: n}, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+    return `NUVIO-${pick(6)}`;
+}
+
+async function loadPromoCodes() {
+    try {
+        const snapshot = await getDocs(collection(db, "promoCodes"));
+        allPromoCodes = [];
+        snapshot.forEach(docSnap => { allPromoCodes.push({ id: docSnap.id, ...docSnap.data() }); });
+        allPromoCodes.sort((a, b) => {
+            const ta = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+            const tb = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+            return tb - ta; // newest first
+        });
+        renderPromoCodes();
+    } catch (err) {
+        console.error('Failed to load promo codes:', err);
+        document.getElementById('promo-list').innerHTML = '<div class="loading-cell">Failed to load</div>';
+    }
+}
+
+function renderPromoCodes() {
+    const list = document.getElementById('promo-list');
+    const countEl = document.getElementById('promo-count');
+    countEl.textContent = `${allPromoCodes.length} active code${allPromoCodes.length !== 1 ? 's' : ''}`;
+    if (allPromoCodes.length === 0) {
+        list.innerHTML = '<div class="loading-cell" style="padding:28px">No active promo codes. Generate one above.</div>';
+        return;
+    }
+    list.innerHTML = allPromoCodes.map(p => {
+        const days = p.days || 7;
+        let createdLabel = '';
+        if (p.createdAt) {
+            let ms;
+            if (p.createdAt.toMillis) ms = p.createdAt.toMillis();
+            else if (p.createdAt.seconds) ms = p.createdAt.seconds * 1000;
+            else ms = new Date(p.createdAt).getTime();
+            createdLabel = new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        return `
+        <div class="promo-item">
+            <div class="promo-item-main">
+                <code class="promo-code-text">${escapeHtml(p.id)}</code>
+                <span class="badge badge-green">${days}d</span>
+                ${createdLabel ? `<span class="promo-date">${createdLabel}</span>` : ''}
+            </div>
+            <div class="promo-item-actions">
+                <button class="icon-btn" title="Copy code" onclick="copyPromoCode('${escapeJs(p.id)}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="icon-btn danger" title="Delete code" onclick="confirmDeletePromo('${escapeJs(p.id)}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.copyPromoCode = (code) => {
+    navigator.clipboard.writeText(code);
+    showToast('Code copied');
+};
+
+window.confirmDeletePromo = (code) => {
+    showConfirm('Delete Promo Code', `Delete "${code}"? It will no longer be redeemable. This cannot be undone.`, async () => {
+        try {
+            await deleteDoc(doc(db, "promoCodes", code));
+            showToast('Promo code deleted');
+            loadPromoCodes();
+        } catch { showToast('Failed'); }
+    });
+};
+
+// Open promo modal
+document.getElementById('promo-btn').addEventListener('click', () => {
+    openModal('promo-modal');
+    loadPromoCodes();
+});
+
+// Generate promo codes
+document.getElementById('promo-generate-btn').addEventListener('click', async () => {
+    const qty = Math.min(50, Math.max(1, parseInt(document.getElementById('promo-qty').value) || 1));
+    const days = Math.min(365, Math.max(1, parseInt(document.getElementById('promo-days').value) || 7));
+    const btn = document.getElementById('promo-generate-btn');
+    btn.disabled = true;
+    btn.textContent = `Generating 0/${qty}...`;
+    let success = 0;
+    const generated = [];
+    for (let i = 0; i < qty; i++) {
+        // Ensure unique code (avoid collisions within this batch + existing)
+        let code;
+        let attempts = 0;
+        do {
+            code = generatePromoCodeString();
+            attempts++;
+        } while ((allPromoCodes.some(p => p.id === code) || generated.includes(code)) && attempts < 10);
+        try {
+            await setDoc(doc(db, "promoCodes", code), {
+                code, days,
+                createdAt: serverTimestamp(),
+                createdBy: 'admin'
+            });
+            generated.push(code);
+            success++;
+        } catch (err) {
+            console.error('Failed to create promo code:', err);
+        }
+        btn.textContent = `Generating ${i+1}/${qty}...`;
+    }
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Generate`;
+    showToast(`Generated ${success}/${qty} code${success !== 1 ? 's' : ''}`);
+    if (success > 0) loadPromoCodes();
+});
+
+// Copy all codes
+document.getElementById('promo-copy-all-btn').addEventListener('click', () => {
+    if (allPromoCodes.length === 0) { showToast('No codes to copy'); return; }
+    const text = allPromoCodes.map(p => p.id).join('\n');
+    navigator.clipboard.writeText(text);
+    showToast(`Copied ${allPromoCodes.length} codes`);
+});
 
 // ── Login Events ──
 document.getElementById('login-btn').addEventListener('click', login);

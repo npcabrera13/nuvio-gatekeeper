@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuvio Admin</title>
-    <link rel="stylesheet" href="style.css?v=27">
+    <link rel="stylesheet" href="style.css?v=28">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="https://nuvio.tv/assets/Logo_1080x1080.png">
 </head>
@@ -137,6 +137,10 @@
                     <button id="export-btn" class="btn btn-ghost btn-sm" title="Export CSV">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     </button>
+                    <button id="promo-btn" class="btn btn-ghost btn-sm" title="Promo Codes">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                        <span>Promo</span>
+                    </button>
                     <button id="bulk-btn" class="btn btn-ghost btn-sm">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
                         <span>Bulk</span>
@@ -211,10 +215,7 @@
                     <label>Customer Name (optional)</label>
                     <input type="text" id="create-name" class="form-input" placeholder="Juan Dela Cruz">
                 </div>
-                <div class="form-group">
-                    <label>Days (default 30)</label>
-                    <input type="number" id="create-days" class="form-input" value="30" min="1">
-                </div>
+                <p class="modal-hint">Duration is set when the token is assigned or a promo code is redeemed — no days field needed here.</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeModal('create-modal')">Cancel</button>
@@ -336,6 +337,53 @@
         </div>
     </div>
 
+    <!-- Promo Codes Modal -->
+    <div id="promo-modal" class="modal hidden">
+        <div class="modal-backdrop" onclick="closeModal('promo-modal')"></div>
+        <div class="modal-card" style="max-width:560px">
+            <div class="modal-header">
+                <h2>Promo Codes</h2>
+                <button class="modal-close" onclick="closeModal('promo-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-hint">Each code grants a 7-day free trial. Codes are single-use — once redeemed by a customer they disappear from this list. Generate codes here, then share them with customers.</p>
+
+                <!-- Generate -->
+                <div class="promo-generate-row">
+                    <div class="form-group" style="margin-bottom:0;flex:1">
+                        <label>Quantity</label>
+                        <input type="number" id="promo-qty" class="form-input" value="1" min="1" max="50">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;flex:1">
+                        <label>Days (default 7)</label>
+                        <input type="number" id="promo-days" class="form-input" value="7" min="1" max="365">
+                    </div>
+                    <button id="promo-generate-btn" class="btn btn-primary" style="align-self:flex-end">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Generate
+                    </button>
+                </div>
+
+                <!-- List header -->
+                <div class="promo-list-header">
+                    <span id="promo-count" class="promo-count">0 active codes</span>
+                    <button id="promo-copy-all-btn" class="btn btn-ghost btn-sm" title="Copy all codes">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copy All
+                    </button>
+                </div>
+
+                <!-- List -->
+                <div id="promo-list" class="promo-list">
+                    <div class="loading-cell">Loading...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('promo-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirm Modal (replaces browser confirm) -->
     <div id="confirm-modal" class="modal hidden">
         <div class="modal-backdrop" onclick="closeModal('confirm-modal')"></div>
@@ -356,6 +404,6 @@
     <!-- Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script type="module" src="admin.js?v=27"></script>
+    <script type="module" src="admin.js?v=28"></script>
 </body>
 </html>
