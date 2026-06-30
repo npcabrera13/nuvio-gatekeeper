@@ -3,359 +3,398 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuvio Admin</title>
-    <link rel="stylesheet" href="style.css?v=27">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" href="https://nuvio.tv/assets/Logo_1080x1080.png">
+    <title>Nuvio Gatekeeper Admin</title>
+    <meta name="description" content="Nuvio Gatekeeper - Premium Stremio Manager">
+    <link rel="stylesheet" href="style.css?v=30">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
+    <!-- Ambient Background Effects -->
     <div class="ambient-bg">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
     </div>
 
-    <!-- Login -->
-    <div id="login-overlay" class="login-overlay">
-        <div class="login-card">
-            <img src="https://nuvio.tv/assets/Logo_1080x1080.png" alt="Nuvio" class="login-logo">
-            <h1 class="login-title">Nuvio Admin</h1>
-            <p class="login-subtitle">Manage customer accounts</p>
-            <input type="password" id="password-input" class="form-input" placeholder="Admin password" autocomplete="current-password">
-            <button id="login-btn" class="btn btn-primary btn-full">Unlock</button>
+    <!-- Password Login Overlay -->
+    <div id="login-overlay" class="overlay active">
+        <div class="login-card premium-glass">
+            <div class="login-logo">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#38bdf8"/><stop offset="100%" style="stop-color:#818cf8"/></linearGradient></defs>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span class="brand-text">Nuvio Gatekeeper</span>
+            </div>
+            <p class="login-subtitle">Secure access to the ultimate stream router.</p>
+            <input type="password" id="password-input" class="form-input" placeholder="Admin Password" autocomplete="current-password">
+            <button id="login-btn" class="btn btn-glow btn-full">Unlock Dashboard</button>
             <p id="login-error" class="error-text"></p>
         </div>
     </div>
 
-    <!-- App -->
-    <div id="app" class="app hidden">
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
 
-        <!-- Topbar -->
-        <nav class="topbar">
-            <div class="topbar-left">
-                <img src="https://nuvio.tv/assets/Logo_1080x1080.png" alt="Nuvio" class="topbar-logo">
-                <span class="topbar-title">Nuvio Admin</span>
+        <!-- Top Navigation -->
+        <nav class="top-nav premium-glass">
+            <div class="nav-brand">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <span class="brand-text">Nuvio</span>
             </div>
-            <div class="topbar-right">
-                <button id="refresh-btn" class="btn btn-ghost btn-sm">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Refresh</span>
-                </button>
-                <button id="logout-btn" class="btn btn-ghost btn-sm">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    <span>Logout</span>
-                </button>
+            <div style="display: flex; gap: 1rem;">
+                <button id="view-addons-btn" class="btn btn-outline" style="font-size: 0.85rem; height: 34px;">👁️ View Active Addons</button>
             </div>
         </nav>
 
-        <main class="main-content">
-
-            <!-- Stats Row -->
-            <div class="stats-grid" id="stats-grid">
-                <div class="stat-card" data-filter="all">
-                    <div class="stat-icon stat-blue">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+        <!-- Stats Row -->
+        <div class="stats-row" style="margin-bottom:1.5rem;">
+            <div class="stat-card premium-glass" id="filter-total" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper blue-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-value" id="stat-total">0</span>
-                        <span class="stat-label">Total</span>
-                    </div>
-                </div>
-                <div class="stat-card" data-filter="available">
-                    <div class="stat-icon stat-green">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-available">0</span>
-                        <span class="stat-label">Available</span>
-                    </div>
-                </div>
-                <div class="stat-card" data-filter="assigned">
-                    <div class="stat-icon stat-amber">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-assigned">0</span>
-                        <span class="stat-label">Assigned</span>
-                    </div>
-                </div>
-                <div class="stat-card" data-filter="blocked">
-                    <div class="stat-icon stat-red">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-blocked">0</span>
-                        <span class="stat-label">Blocked</span>
-                    </div>
-                </div>
-                <div class="stat-card" data-filter="expired">
-                    <div class="stat-icon stat-orange">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-expired">0</span>
-                        <span class="stat-label">Expired</span>
-                    </div>
-                </div>
-                <div class="stat-card" data-filter="unconfigured">
-                    <div class="stat-icon stat-gray">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-unconfigured">0</span>
-                        <span class="stat-label">Unconfigured</span>
+                        <span class="stat-value" id="stat-total" style="font-size:1.5rem; font-weight:700;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Total Tokens</span>
                     </div>
                 </div>
             </div>
-
-            <!-- Analytics (computed from loaded data, 0 extra reads) -->
-            <div class="analytics-section" id="analytics-section">
-                <div class="analytics-card">
-                    <div class="analytics-label">Assigned Rate</div>
-                    <div class="analytics-bar"><div class="analytics-fill" id="bar-assigned" style="width:0%"></div></div>
-                    <div class="analytics-value" id="pct-assigned">0%</div>
-                </div>
-                <div class="analytics-card">
-                    <div class="analytics-label">Available Rate</div>
-                    <div class="analytics-bar"><div class="analytics-fill green" id="bar-available" style="width:0%"></div></div>
-                    <div class="analytics-value" id="pct-available">0%</div>
-                </div>
-                <div class="analytics-card">
-                    <div class="analytics-label">Expiring Soon (7d)</div>
-                    <div class="analytics-bar"><div class="analytics-fill amber" id="bar-expiring" style="width:0%"></div></div>
-                    <div class="analytics-value" id="cnt-expiring">0</div>
+            <div class="stat-card premium-glass" id="filter-available" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper green-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value text-green" id="stat-available" style="font-size:1.5rem; font-weight:700; color:#10b981;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Available</span>
+                    </div>
                 </div>
             </div>
-
-            <!-- Actions Bar -->
-            <div class="actions-bar">
-                <div class="search-wrapper">
-                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" id="search-input" class="search-input" placeholder="Search name, token, email, customer...">
-                </div>
-                <div class="actions-right">
-                    <button id="export-btn" class="btn btn-ghost btn-sm" title="Export CSV">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    </button>
-                    <button id="bulk-btn" class="btn btn-ghost btn-sm">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                        <span>Bulk</span>
-                    </button>
-                    <button id="create-btn" class="btn btn-primary btn-sm">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>Create</span>
-                    </button>
+            <div class="stat-card premium-glass" id="filter-assigned" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper purple-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-assigned" style="font-size:1.5rem; font-weight:700; color:#a78bfa;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Assigned</span>
+                    </div>
                 </div>
             </div>
-
-            <!-- Active filter indicator -->
-            <div id="filter-indicator" class="filter-indicator hidden">
-                <span id="filter-text">All tokens</span>
-                <button id="clear-filter" class="clear-filter">&times;</button>
+            <div class="stat-card premium-glass" id="filter-expired" style="cursor:pointer; padding:1.25rem; border-radius:14px;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div class="stat-icon-wrapper red-glow">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value text-red" id="stat-expired" style="font-size:1.5rem; font-weight:700; color:#ef4444;">0</span>
+                        <span class="stat-label" style="font-size:0.75rem; color:var(--text-muted);">Expired/Blocked</span>
+                    </div>
+                </div>
             </div>
+        </div>
+        
+        <!-- Filter Bar -->
+        <div class="filter-bar premium-glass" style="margin-bottom: 24px; padding: 12px 24px; border-radius: 12px; display: flex; gap: 12px; align-items: center; overflow-x: auto;">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px;">Filters:</span>
+            <button class="btn btn-sm btn-filter active" data-filter="all">All</button>
+            <button class="btn btn-sm btn-filter btn-outline" data-filter="available">🟢 Available</button>
+            <button class="btn btn-sm btn-filter btn-outline" data-filter="assigned">🔴 Assigned</button>
+            <button class="btn btn-sm btn-filter btn-outline" data-filter="unconfigured">⚪ Unconfigured</button>
+            <button class="btn btn-sm btn-filter btn-outline" data-filter="blocked">❌ Blocked/Expired</button>
+        </div>
 
-            <!-- Desktop Table -->
-            <div class="table-container desktop-only">
-                <table class="token-table">
+        <!-- Customer Table -->
+        <div class="table-container premium-glass">
+            <div class="table-header">
+                <div class="roster-header">
+                    <h2>Customer Roster</h2>
+                    <div class="roster-actions">
+
+                        <div class="input-group" style="margin-right: 1rem; display: inline-flex;">
+                            <span class="input-icon"><i class="fas fa-search"></i></span>
+                            <input type="text" id="roster-search" class="form-input" placeholder="Search tokens or names..." style="width: 250px; padding-left: 2.2rem; height: 34px; font-size: 0.85rem;">
+                        </div>
+                        <button id="refresh-data-btn" class="btn btn-outline" style="margin-right: 1rem;" data-tip="Refresh Data">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        </button>
+                        <button id="open-bulk-modal" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                            <i class="fas fa-layer-group"></i> Bulk Create
+                        </button>
+                        <button id="open-promo-modal" class="btn btn-secondary" style="margin-right: 0.5rem;">
+                            🎁 Promo Codes
+                        </button>
+                        <button id="open-create-modal" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Token
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="loading-spinner" class="spinner"></div>
+            <div class="table-responsive">
+                <table id="customers-table">
                     <thead>
                         <tr>
-                            <th>Customer</th>
+                            <th>Customer Name</th>
                             <th>Token</th>
                             <th>Nuvio Email</th>
+                            <th>Nuvio Password</th>
                             <th>Assigned To</th>
                             <th>Expires</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="tokens-tbody">
-                        <tr><td colspan="7" class="loading-cell">Loading...</td></tr>
-                    </tbody>
+                    <tbody id="customers-body"></tbody>
                 </table>
-            </div>
-
-            <!-- Mobile Cards -->
-            <div class="cards-container mobile-only" id="tokens-cards">
-                <div class="loading-cell">Loading...</div>
-            </div>
-
-            <div id="no-results" class="no-results hidden">
-                <p>No tokens found</p>
-            </div>
-
-            <div class="table-footer">
-                <span id="result-count" class="result-count">0 tokens</span>
-            </div>
-
-        </main>
-    </div>
-
-    <!-- Create Modal -->
-    <div id="create-modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal('create-modal')"></div>
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2>Create Token</h2>
-                <button class="modal-close" onclick="closeModal('create-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Nuvio Email</label>
-                    <input type="email" id="create-email" class="form-input" placeholder="user@nuvio.tv">
+                <div id="no-customers" class="hidden no-data">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5; margin-bottom: 1rem;"><circle cx="12" cy="12" r="10"></circle><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                    <p>No customers found. Create a token to get started!</p>
                 </div>
-                <div class="form-group">
-                    <label>Nuvio Password</label>
-                    <input type="text" id="create-password" class="form-input" placeholder="password123">
-                </div>
-                <div class="form-group">
-                    <label>Customer Name (optional)</label>
-                    <input type="text" id="create-name" class="form-input" placeholder="Juan Dela Cruz">
-                </div>
-                <div class="form-group">
-                    <label>Days (default 30)</label>
-                    <input type="number" id="create-days" class="form-input" value="30" min="1">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('create-modal')">Cancel</button>
-                <button id="create-submit" class="btn btn-primary">Create</button>
             </div>
         </div>
     </div>
 
-    <!-- Bulk Modal -->
-    <div id="bulk-modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal('bulk-modal')"></div>
-        <div class="modal-card">
+    <!-- Create/Edit Modal -->
+    <div id="token-modal" class="overlay hidden">
+        <div class="modal-card premium-glass">
             <div class="modal-header">
-                <h2>Bulk Create</h2>
-                <button class="modal-close" onclick="closeModal('bulk-modal')">&times;</button>
+                <h3 id="modal-title">Create New Token</h3>
+                <button class="btn-icon close-modal" data-target="token-modal">×</button>
             </div>
             <div class="modal-body">
-                <p class="modal-hint">One per line: <code>email,password</code></p>
-                <textarea id="bulk-text" class="form-textarea" placeholder="user1@nuvio.tv,pass123&#10;user2@nuvio.tv,pass456" rows="8"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('bulk-modal')">Cancel</button>
-                <button id="bulk-submit" class="btn btn-primary">Create All</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal('edit-modal')"></div>
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2>Edit Token</h2>
-                <button class="modal-close" onclick="closeModal('edit-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="edit-id">
-                <div class="form-group">
-                    <label>Token ID</label>
-                    <input type="text" id="edit-token" class="form-input" readonly>
-                </div>
-                <div class="form-group">
-                    <label>Nuvio Email</label>
-                    <input type="email" id="edit-email" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label>Nuvio Password</label>
-                    <input type="text" id="edit-password" class="form-input">
-                </div>
+                <input type="hidden" id="edit-token-id">
+                
                 <div class="form-group">
                     <label>Customer Name</label>
-                    <input type="text" id="edit-name" class="form-input">
+                    <input type="text" id="modal-name" class="form-input" placeholder="e.g. John Doe">
                 </div>
+
                 <div class="form-group">
-                    <label>Notes</label>
-                    <input type="text" id="edit-notes" class="form-input">
+                    <label>Notes (Email, Info, etc.)</label>
+                    <textarea id="modal-notes" class="form-input" placeholder="e.g. user@example.com" rows="2" style="resize: vertical;"></textarea>
                 </div>
+
+                <div class="form-group">
+                    <label>Nuvio Account Email</label>
+                    <input type="text" id="modal-nuvio-email" class="form-input" placeholder="e.g. nuviotv1+1@gmail.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Nuvio Account Password</label>
+                    <input type="text" id="modal-nuvio-password" class="form-input" placeholder="e.g. 12345678">
+                </div>
+
+                <div class="form-group hidden" id="token-key-group">
+                    <label>Token ID (API Key)</label>
+                    <input type="text" id="modal-token-key" class="form-input" placeholder="e.g. nuvio_abc123xyz">
+                </div>
+
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
-                <button id="edit-submit" class="btn btn-primary">Save</button>
+                <button class="btn btn-ghost close-modal" data-target="token-modal">Cancel</button>
+                <button id="save-token-btn" class="btn btn-glow">Generate Token</button>
             </div>
         </div>
     </div>
 
-    <!-- Renew Modal -->
-    <div id="renew-modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal('renew-modal')"></div>
-        <div class="modal-card">
+    <!-- Bulk Create Modal -->
+    <div id="bulk-modal" class="overlay hidden">
+        <div class="modal-card premium-glass" style="max-width: 600px;">
             <div class="modal-header">
-                <h2>Renew Token</h2>
-                <button class="modal-close" onclick="closeModal('renew-modal')">&times;</button>
+                <h3>Bulk Create Tokens</h3>
+                <button class="btn-icon close-modal" data-target="bulk-modal">×</button>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="renew-id">
-                <div class="renew-info-box" id="renew-info"></div>
+                <p class="help-text" style="margin-bottom: 1rem;">Paste emails and passwords separated by a comma (one per line).<br>Example:<br><code style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 4px; display: inline-block; margin-top: 4px; color: var(--text-primary);">nuviotv1+1@gmail.com,12345678<br>nuviotv1+2@gmail.com,12345678</code></p>
                 <div class="form-group">
-                    <label>Days</label>
-                    <div class="renew-input-row">
-                        <input type="number" id="renew-days" class="form-input" value="7" min="1">
+                    <textarea id="bulk-input" class="form-input" rows="8" placeholder="email1@gmail.com,pass1&#10;email2@gmail.com,pass2" style="font-family: monospace; resize: vertical;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Duration (Days) — use 7 for free trials</label>
+                    <input type="number" id="bulk-days" class="form-input" value="7" min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost close-modal" data-target="bulk-modal">Cancel</button>
+                <button id="bulk-generate-btn" class="btn btn-glow">Generate All</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Renew / Edit Expiry Modal -->
+    <div id="renew-modal" class="overlay hidden">
+        <div class="modal-card premium-glass">
+            <div class="modal-header">
+                <h3>Manage Expiry — <span id="renew-customer-name"></span></h3>
+                <button class="btn-icon close-modal" data-target="renew-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center; margin-bottom:1.5rem;">
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">Current Expiry</p>
+                    <p id="renew-current-expiry-display" style="font-size:1.1rem; font-weight:600;"></p>
+                    <p id="renew-days-remaining" style="font-size:0.8rem; margin-top:0.25rem;"></p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Days to Add or Remove</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" id="renew-days-input" class="form-input" value="7" min="1" style="flex:1;">
+                        <button id="renew-add-btn" class="btn btn-primary" style="white-space:nowrap;">+ Add</button>
+                        <button id="renew-remove-btn" class="btn btn-outline" style="white-space:nowrap; border-color:rgba(239,68,68,0.3); color:#ef4444;">− Remove</button>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">Adding extends the expiry. Removing shortens it. If the token is expired, adding starts from today.</p>
+                </div>
+                
+                <div class="form-divider" style="margin:1rem 0; border-top:1px solid rgba(255,255,255,0.08);"></div>
+                
+                <div class="form-group">
+                    <label>Quick Set</label>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <button class="btn btn-outline quick-set-btn" data-days="7" style="font-size:0.8rem;">7 days</button>
+                        <button class="btn btn-outline quick-set-btn" data-days="30" style="font-size:0.8rem;">30 days</button>
+                        <button class="btn btn-outline quick-set-btn" data-days="60" style="font-size:0.8rem;">60 days</button>
+                        <button class="btn btn-outline quick-set-btn" data-days="90" style="font-size:0.8rem;">90 days</button>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">Quick Set overwrites the expiry to exactly that many days from now.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Links Copy Modal -->
+    <div id="links-modal" class="overlay hidden">
+        <div class="modal-card premium-glass">
+            <div class="modal-header">
+                <h3>Copy Addon Links</h3>
+                <button class="btn-icon close-modal" data-target="links-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-subtitle">Customer: <strong id="links-customer-name"></strong></p>
+                <div class="form-divider" style="margin: 0.75rem 0 1.25rem 0;"></div>
+                
+                <!-- All-in-One Section -->
+                <div class="link-section">
+                    <h4 class="link-section-title">🎯 All-in-One Master Bundle</h4>
+                    <p class="help-text">Merges all configured addons into a single Stremio install link.</p>
+                    <div class="copy-input-group">
+                        <input type="text" id="master-link-input" class="form-input link-preview-input" readonly>
+                        <button class="btn btn-outline btn-sm test-btn-action" data-input-id="master-link-input" title="Run Diagnostics">Test</button>
+                        <button class="btn btn-glow btn-sm copy-btn-action" data-input-id="master-link-input">Copy</button>
                     </div>
                 </div>
-                <div class="renew-quick">
-                    <button class="renew-btn" data-days="7">7</button>
-                    <button class="renew-btn" data-days="30">30</button>
-                    <button class="renew-btn" data-days="90">90</button>
+
+                <!-- Toggle Button for Individual Links -->
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button id="toggle-individual-links" class="btn btn-ghost btn-sm">
+                        Show Advanced Individual Links
+                    </button>
                 </div>
-                <div class="renew-actions">
-                    <button id="renew-add-btn" class="btn btn-primary">Add Days</button>
-                    <button id="renew-remove-btn" class="btn btn-ghost">Remove Days</button>
+
+                <!-- One-by-One Section (Hidden by Default) -->
+                <div id="individual-links-wrapper" class="link-section hidden" style="margin-top: 1rem;">
+                    <h4 class="link-section-title">⚡ Individual Addon Links (One-by-One)</h4>
+                    <p class="help-text">Directly route specific addons for this customer's token.</p>
+                    <div id="individual-links-container" class="individual-links-container">
+                        <!-- Individual links dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Diagnostic Console -->
+                <div id="diagnostic-console-container" class="diagnostic-container hidden">
+                    <div class="diagnostic-header">
+                        <span>Terminal Output</span>
+                        <button id="clear-diagnostics" class="btn-icon btn-sm">×</button>
+                    </div>
+                    <div id="diagnostic-console" class="diagnostic-console"></div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('renew-modal')">Close</button>
+                <button class="btn btn-ghost close-modal" data-target="links-modal">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Assign Modal (custom assign) -->
-    <div id="assign-modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal('assign-modal')"></div>
-        <div class="modal-card">
+    <!-- Active Addons Modal -->
+    <div id="addons-modal" class="overlay hidden">
+        <div class="modal-card premium-glass" style="max-width: 500px;">
             <div class="modal-header">
-                <h2>Assign to User</h2>
-                <button class="modal-close" onclick="closeModal('assign-modal')">&times;</button>
+                <h3 class="modal-title">👁️ Active Addons</h3>
+                <button class="close-modal btn-icon" data-target="addons-modal">×</button>
+            </div>
+            <div class="modal-body" style="padding-top: 1rem;">
+                <p class="help-text" style="margin-bottom: 1.5rem;">List of Stremio/IPTV addons currently configured in the Gatekeeper proxy.</p>
+                <div id="active-addons-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <!-- Loaded dynamically -->
+                    <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading addons list...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost close-modal" data-target="addons-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Addon Template (Hidden) -->
+    <template id="addon-template">
+        <div class="addon-item">
+            <div class="addon-inputs">
+                <input type="text" class="form-input addon-name" placeholder="Name (e.g. Torrentio)">
+                <input type="url" class="form-input addon-url" placeholder="https://.../manifest.json">
+            </div>
+            <div class="addon-actions">
+                <button class="btn-icon move-up" title="Move Up">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                </button>
+                <button class="btn-icon move-down" title="Move Down">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <button class="btn-icon remove-addon text-red" title="Remove Addon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Promo Codes Modal -->
+    <div id="promo-modal" class="overlay hidden">
+        <div class="modal-card premium-glass" style="max-width:600px;">
+            <div class="modal-header">
+                <h3>🎁 Promo Codes</h3>
+                <button class="btn-icon close-modal" data-target="promo-modal">×</button>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="assign-id">
-                <p class="modal-hint">Enter the customer's email. They will be linked to this token on their next login.</p>
                 <div class="form-group">
-                    <label>Customer Email</label>
-                    <input type="email" id="assign-email" class="form-input" placeholder="customer@gmail.com">
+                    <label>Generate New Promo Code</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <input type="number" id="promo-days-input" class="form-input" placeholder="Days (default 7)" value="7" min="1" style="flex:1;">
+                        <button id="generate-promo-btn" class="btn btn-glow" style="white-space:nowrap;">Generate</button>
+                    </div>
+                </div>
+                <div class="form-divider" style="margin:1rem 0; border-top:1px solid rgba(255,255,255,0.08);"></div>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">Active & Used Promo Codes:</p>
+                <div id="promo-codes-list" style="max-height:300px; overflow-y:auto;">
+                    <p style="text-align:center; color:var(--text-muted); padding:1rem;">No promo codes yet. Generate one above!</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('assign-modal')">Cancel</button>
-                <button id="assign-submit" class="btn btn-primary">Assign</button>
+                <button class="btn btn-ghost close-modal" data-target="promo-modal">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Confirm Modal (replaces browser confirm) -->
-    <div id="confirm-modal" class="modal hidden">
-        <div class="modal-backdrop" onclick="closeModal('confirm-modal')"></div>
-        <div class="modal-card" style="max-width:400px">
-            <div class="modal-header">
-                <h2 id="confirm-title">Confirm</h2>
-            </div>
-            <div class="modal-body">
-                <p id="confirm-message" style="color:var(--text-muted);font-size:14px;line-height:1.6;"></p>
-            </div>
-            <div class="modal-footer">
-                <button id="confirm-no" class="btn btn-ghost">Cancel</button>
-                <button id="confirm-yes" class="btn btn-danger">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast -->
-    <div id="toast" class="toast hidden"></div>
-
-    <script type="module" src="admin.js?v=27"></script>
+    <script type="module" src="admin.js"></script>
 </body>
 </html>
