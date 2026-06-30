@@ -114,7 +114,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 3. Find an available Nuvio account (unassigned, active, not expired, configured).
+    // 3. Find an available Nuvio account (unassigned, active, configured).
+    //    Note: we no longer filter by "not expired" — unassigned tokens have
+    //    expiresAt: null (no expiry while sitting in the pool). The redemption
+    //    sets a fresh expiresAt = now + days, so any prior value is overwritten.
     const custSnap = await getDocs(collection(db, "customers"));
     let availableToken = null;
     custSnap.forEach(d => {
@@ -123,9 +126,8 @@ module.exports = async function handler(req, res) {
       const assignedTo = data.assignedTo || '';
       const isAssigned = assignedTo && assignedTo.trim() !== '';
       const isBlocked = (data.status || 'active') !== 'active';
-      const expired = isExpired(data.expiresAt);
       const isUnconfigured = !data.nuvioEmail || data.nuvioEmail.trim() === '';
-      if (!isAssigned && !isBlocked && !expired && !isUnconfigured) {
+      if (!isAssigned && !isBlocked && !isUnconfigured) {
         availableToken = { id: d.id, data };
       }
     });

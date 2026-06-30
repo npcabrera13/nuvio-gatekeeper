@@ -350,9 +350,11 @@ window.openAssign = (id) => {
 
 // Confirmation actions (use popup, not browser confirm)
 window.confirmUnassign = (id) => {
-    showConfirm('Unassign Token', 'This will remove the customer from this token. They will lose access immediately. Continue?', async () => {
+    showConfirm('Unassign Token', 'This will remove the customer from this token. They will lose access immediately. The token goes back to the pool with no expiry. Continue?', async () => {
         try {
-            await updateDoc(doc(db, "customers", id), { assignedTo: null, name: '' });
+            // Reset assignedTo AND expiresAt — token goes back to the shelf, fresh.
+            // Expiry will be set again when the token is next assigned.
+            await updateDoc(doc(db, "customers", id), { assignedTo: null, name: '', expiresAt: null });
             showToast('Unassigned');
             loadTokens();
         } catch { showToast('Failed'); }
@@ -413,12 +415,13 @@ document.getElementById('create-submit').addEventListener('click', async () => {
 
 async function doCreateToken(email, password, name, days) {
     const id = randomId();
-    const expires = new Date(Date.now() + days * 86400000);
+    // Unassigned tokens have NO expiry — they sit in the pool indefinitely.
+    // Expiry is set only when the token is assigned (buy / redeem / admin-assign / reassign).
     try {
         await setDoc(doc(db, "customers", id), {
             nuvioEmail: email, nuvioPassword: password, name: name,
             status: 'active', assignedTo: null,
-            expiresAt: Timestamp.fromDate(expires), createdAt: serverTimestamp(), notes: ''
+            expiresAt: null, createdAt: serverTimestamp(), notes: ''
         });
         showToast('Token created');
         closeModal('create-modal');
@@ -443,12 +446,12 @@ document.getElementById('bulk-submit').addEventListener('click', async () => {
         const [email, password] = lines[i].split(',').map(s => s.trim());
         if (!email || !password) continue;
         const id = randomId();
-        const expires = new Date(Date.now() + 30 * 86400000);
+        // Unassigned tokens have NO expiry — set on assignment.
         try {
             await setDoc(doc(db, "customers", id), {
                 nuvioEmail: email, nuvioPassword: password, name: email,
                 status: 'active', assignedTo: null,
-                expiresAt: Timestamp.fromDate(expires), createdAt: serverTimestamp(), notes: ''
+                expiresAt: null, createdAt: serverTimestamp(), notes: ''
             });
             success++;
         } catch {}
@@ -571,14 +574,18 @@ document.getElementById('assign-submit').addEventListener('click', async () => {
         return;
     }
 
-    // No existing assignment — just assign normally
+    // No existing assignment — fresh assignment (e.g. pre-assign to a user who
+    // hasn't signed up yet). Start the clock now with a 30-day default.
+    // (Admin can adjust via the Renew modal afterward.)
     try {
+        const freshExpiry = new Date(Date.now() + 30 * 86400000);
         await updateDoc(doc(db, "customers", id), {
             assignedTo: email,
             name: email,
-            status: 'active'
+            status: 'active',
+            expiresAt: Timestamp.fromDate(freshExpiry)
         });
-        showToast(`Assigned to ${email}`);
+        showToast(`Assigned to ${email} (30 days)`);
         closeModal('assign-modal');
         loadTokens();
     } catch { showToast('Failed'); }

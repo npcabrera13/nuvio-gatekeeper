@@ -379,11 +379,18 @@ async function handler(req, res) {
 
     if (!customerData || customerData.status !== "active") {
       isBlocked = true;
-    } else if (customerData.expiresAt) {
-      const expMillis = typeof customerData.expiresAt.toMillis === "function"
-        ? customerData.expiresAt.toMillis()
-        : new Date(customerData.expiresAt).getTime();
-      if (Date.now() > expMillis) isBlocked = true;
+    } else {
+      // Inventory on the shelf can't be consumed: an unassigned token
+      // (assignedTo null/empty) must not stream even if someone guesses the URL.
+      const assignedTo = customerData.assignedTo || "";
+      if (!assignedTo || assignedTo.trim() === "") {
+        isBlocked = true;
+      } else if (customerData.expiresAt) {
+        const expMillis = typeof customerData.expiresAt.toMillis === "function"
+          ? customerData.expiresAt.toMillis()
+          : new Date(customerData.expiresAt).getTime();
+        if (Date.now() > expMillis) isBlocked = true;
+      }
     }
   }
 
