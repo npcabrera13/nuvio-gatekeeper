@@ -591,17 +591,18 @@ document.getElementById('assign-submit').addEventListener('click', async () => {
     }
 
     // No existing assignment — fresh assignment (e.g. pre-assign to a user who
-    // hasn't signed up yet). Start the clock now with a 30-day default.
-    // (Admin can adjust via the Renew modal afterward.)
+    // hasn't signed up yet). Set assignedTo but NO expiry — the clock doesn't
+    // start until the admin manually sets days via the Renew modal.
+    // This matches the flow: admin pre-assigns → user signs up → verifies →
+    // sees their dashboard with the assigned account → admin sets days via Renew.
     try {
-        const freshExpiry = new Date(Date.now() + 30 * 86400000);
         await updateDoc(doc(db, "customers", id), {
             assignedTo: email,
             name: email,
             status: 'active',
-            expiresAt: Timestamp.fromDate(freshExpiry)
+            expiresAt: null
         });
-        showToast(`Assigned to ${email} (30 days)`);
+        showToast(`Assigned to ${email} (no expiry — set days via Renew)`);
         closeModal('assign-modal');
         loadTokens();
     } catch { showToast('Failed'); }
