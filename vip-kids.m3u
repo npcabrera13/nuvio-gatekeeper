@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/cartoon-network-us.png" fanart="https://sfile.chatglm.cn/images-ppt/d3c6fb78acfb.jpg" group-title="Kids", Cartoon Network
+http://23.237.104.106:8080/USA_CARTOON_NETWORK/index.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/5rrVFWX.jpeg" fanart="https://sfile.chatglm.cn/images-ppt/e2b50c694d14.png" group-title="Kids", Animax
+https://ott.djdoolky76.net/stream/iptv/animax/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://static.hidive.com/news/2026/05/hidive-announcement-836x470.jpg" fanart="https://sfile.chatglm.cn/images-ppt/8089423299eb.png" group-title="Kids", Anime x Hidive
+https://ott.djdoolky76.net/stream/iptv/animexhidive/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://i.imgur.com/O2JNLIz.png" fanart="https://sfile.chatglm.cn/images-ppt/d0a5e2baf210.jpg" group-title="Kids", Dreamworks Channel
+https://ott.djdoolky76.net/stream/iptv/cignaldreamworks/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/knowledge-channel-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/8a9a389a2a26.jpg" group-title="Kids", Knowledge Channel
+https://ott.djdoolky76.net/stream/iptv/knowledgechannel/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e

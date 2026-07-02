@@ -1,0 +1,15 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/nba-tv-philippines-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/c530f0666d85.jpeg" group-title="Sports", NBA TV Philippines
+https://ott.djdoolky76.net/stream/iptv/nbatvphilippines/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/nba-tv-us.png" fanart="https://sfile.chatglm.cn/images-ppt/0ce677d55e1e.jpg" group-title="Sports", NBA TV
+https://ott.djdoolky76.net/stream/ustv/nbatv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/espn-us.png" fanart="https://sfile.chatglm.cn/images-ppt/c28eb1cc7420.png" group-title="Sports", ESPN
+https://ott.djdoolky76.net/stream/ustv/espn/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/espn-2-us.png" fanart="https://sfile.chatglm.cn/images-ppt/1adc874a872c.jpg" group-title="Sports", ESPN 2
+https://ott.djdoolky76.net/stream/ustv/espn2/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/ufc-us.png" fanart="https://sfile.chatglm.cn/images-ppt/6c42f18c9ff5.jpg" group-title="Sports", UFC
+https://linear-893.frequency.stream/dist/xumo/893/hls/master/playlist_1920x1080.m3u8
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/pba-rush-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/1350aaf386f0.jpg" group-title="Sports", PBA Rush
+https://ott.djdoolky76.net/stream/iptv/pbarush/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://sfile.chatglm.cn/images-ppt/415ad6da85bb.jpg" fanart="https://sfile.chatglm.cn/images-ppt/13fc216f690c.jpg" group-title="Sports", UAAP Varsity Channel
+https://ott.djdoolky76.net/stream/iptv/uaapvarsitychannel/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e

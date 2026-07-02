@@ -86,6 +86,21 @@ const ALL_ADDONS = [
     name: "VIPChannels",
     url: "https://stiptv.ddns.me/eyJ1c2VYdHJlYW0iOmZhbHNlLCJtM3VVcmwiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbnBjYWJyZXJhMTMvbnV2aW8tZ2F0ZWtlZXBlci9tdWx0aWFkZG9uL3ZpcC1jaGVycnktcGljay5tM3UiLCJlbmFibGVFcGciOmZhbHNlLCJpbnN0YW5jZUlkIjoiMzMzZjYxNjktY2FiYy00NjEyLWJkNzgtZjZiZTMyYjg1NTRiIn0=/manifest.json",
     resources: ["catalog", "meta", "stream"]
+  },
+  {
+    name: "VIPMovies",
+    url: "https://stiptv.ddns.me/manifest.json",
+    resources: ["catalog", "meta", "stream"]
+  },
+  {
+    name: "VIPSports",
+    url: "https://stiptv.ddns.me/manifest.json",
+    resources: ["catalog", "meta", "stream"]
+  },
+  {
+    name: "VIPKids",
+    url: "https://stiptv.ddns.me/manifest.json",
+    resources: ["catalog", "meta", "stream"]
   }
 ];
 
@@ -178,7 +193,16 @@ const HARDCODED_MANIFEST = {
     // Global TV Guides
     
     // VIP Cherry Pick Channels
-    { type: "tv", id: "vipchannels___channels", name: "⭐ VIP Cherry Pick TV" }
+    { type: "tv", id: "vipchannels___channels", name: "⭐ VIP Cherry Pick TV" },
+    
+    // VIP Movies
+    { type: "tv", id: "vipmovies___channels", name: "🎬 Movies & Series" },
+    
+    // VIP Sports
+    { type: "tv", id: "vipsports___channels", name: "🏀 Sports" },
+    
+    // VIP Kids & Anime
+    { type: "tv", id: "vipkids___channels", name: "🎨 Kids & Anime" }
   ],
   idPrefixes: ["tt", "kitsu", "iptv_"],
   behaviorHints: { configurable: false }
@@ -216,7 +240,10 @@ const EMPTY_RESPONSE = { streams: [], metas: [], catalogs: [] };
 // ─── Local M3U Parser ───────────────────────────────────────────────────────
 const M3U_URLS = {
   pinoytv: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/master-ph-v2.m3u",
-  vipchannels: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/vip-cherry-pick.m3u"
+  vipchannels: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/vip-cherry-pick.m3u",
+  vipmovies: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/vip-movies.m3u",
+  vipsports: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/vip-sports.m3u",
+  vipkids: "https://raw.githubusercontent.com/npcabrera13/nuvio-gatekeeper/multiaddon/vip-kids.m3u"
 };
 
 const _m3uCache = new Map();
@@ -440,9 +467,10 @@ async function handler(req, res) {
       let realId = realIdParts.join("___");
       const addonLower = addonPrefix.toLowerCase();
 
-      // ── LOCAL M3U SHORT-CIRCUIT: pinoytv & vipchannels ─────────────────
-      if ((addonLower === "pinoytv" || addonLower === "vipchannels") && realId === "channels") {
-        const playlistKey = addonLower === "pinoytv" ? "pinoytv" : "vipchannels";
+      // ── LOCAL M3U SHORT-CIRCUIT: pinoytv, vipchannels, vipmovies, vipsports, vipkids ──
+      const M3U_ADDONS = ["pinoytv", "vipchannels", "vipmovies", "vipsports", "vipkids"];
+      if (M3U_ADDONS.includes(addonLower) && realId === "channels") {
+        const playlistKey = addonLower;
         const channels = await loadM3UChannels(playlistKey);
         const metas = channels.map(ch => ({
           id: ch.id, type: "tv", name: ch.name,
@@ -510,7 +538,7 @@ async function handler(req, res) {
     // If request is for live TV / IPTV metadata
     if (id && id.startsWith("iptv_")) {
       // ── LOCAL META SHORT-CIRCUIT: pinoytv & vipchannels ────────────────
-      for (const playlistKey of ["pinoytv", "vipchannels"]) {
+      for (const playlistKey of ["pinoytv", "vipchannels", "vipmovies", "vipsports", "vipkids"]) {
         const channels = await loadM3UChannels(playlistKey);
         const ch = channels.find(c => c.id === id);
         if (ch) {
@@ -611,8 +639,8 @@ async function handler(req, res) {
     if (stremioPath.startsWith("stream/tv/")) {
       const streamId = stremioPath.replace(/^stream\/tv\//, "").replace(/\.json$/, "");
 
-      // ── LOCAL STREAM SHORT-CIRCUIT: pinoytv & vipchannels ──────────────
-      for (const playlistKey of ["pinoytv", "vipchannels"]) {
+      // ── LOCAL STREAM SHORT-CIRCUIT: pinoytv, vipchannels, vipmovies, vipsports, vipkids ──
+      for (const playlistKey of ["pinoytv", "vipchannels", "vipmovies", "vipsports", "vipkids"]) {
         const channels = await loadM3UChannels(playlistKey);
         const ch = channels.find(c => c.id === streamId);
         if (ch) {

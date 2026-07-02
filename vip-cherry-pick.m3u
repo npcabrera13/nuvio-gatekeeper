@@ -73,3 +73,16 @@ https://a57e9c69976649b582a8d7604c00e69a.mediatailor.us-east-1.amazonaws.com/v1/
 
 #EXTINF:-1 tvg-logo="https://i.imgur.com/ocr50ki.jpeg" fanart="https://yt3.googleusercontent.com/iF8IChOxa8nAQf_qfDzWa_6UGsrLahmjNp0dKO43Z_jRb8s8l-VFaeq69dNmtaRjW1EFm0E5oA=w1920" group-title="Anime", FilmRise Anime
 https://dvu7aia8rjlfm.cloudfront.net/master.m3u8
+
+#EXTINF:-1 tvg-logo="https://sfile.chatglm.cn/images-ppt/00cbc775bf1c.jpg" fanart="https://sfile.chatglm.cn/images-ppt/c1f8857afb3b.jpg" group-title="International", BBC Earth
+https://ott.djdoolky76.net/stream/ustv/bbcearth/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/pt/6/6f/BBC_Food_logo.png" fanart="https://sfile.chatglm.cn/images-ppt/11518f179dbe.jpg" group-title="International", BBC Food
+https://ott.djdoolky76.net/stream/ustv/bbcfood/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://cms.bbcasia.com/sites/default/files/2021-05/Lifestyle.jpg" fanart="https://sfile.chatglm.cn/images-ppt/9f4a39af8e0c.jpg" group-title="International", BBC Lifestyle
+https://ott.djdoolky76.net/stream/iptv/bbclifestyle/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/discovery-channel-us.png" fanart="https://sfile.chatglm.cn/images-ppt/9ebb8cfa8625.jpg" group-title="International", Discovery
+https://ott.djdoolky76.net/stream/ustv/discovery/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://i.imgur.com/ZwFKETc.jpeg" fanart="https://sfile.chatglm.cn/images-ppt/88d06f3d81ba.jpg" group-title="International", Asian Food Network
+https://ott.djdoolky76.net/stream/iptv/asianfoodnetwork/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/international/dazn-int.png" fanart="https://sfile.chatglm.cn/images-ppt/08a0b55fe54d.jpg" group-title="International", DAZN Combat
+https://rakutenaa-dazn-combat-rakuten-kcybm.amagi.tv/ts-eu-w1-n2/playlist/rakutenAA-dazn-combat-rakuten/cb573d1a786c618a84cb3b66cef34282847b3dcb0e6c886470af4a9765d97800dbe8ae84ae5b910c4c9e1fc061017d360439cd1dd56c49c1da63b820743c4b21fdcde00080dd0d0cb1df11292ca36265299a7369cc350f7bd2ec5a2f803ebe764c53cb017c593f88f258a9734cc59e0a957f39e8fc8b307b24455a9c5a43e6a64cb7ade65840d064a4b60148c42d45fa83439fd501b3d2d609834b8470a31294c7f888d21182e4f1598c6f3ae60e22404db1c212a3c154bad38a793092743b34713f8482a08e85b81b253938d9ecc2be1f9f59aedb67e9f454ca57716e84b5da268a70849dc522fbe5e1620b5285d75260688de4ae83f73409700791adc4d2697595fa153712873d986a1c319ef9c40397833ba2f672d5fa394678f7984bcdc9e9c3f7e6d903dc04dad7f89d0a474c480d16c908f1cd23887f9d3083e6270c700104a1935ec1c6fe5b336940cfc07ddc0114b4dec4d28b5b759a2e4b14b820ea5a036dde3d2329b67ab7c96a1efc4c60b23c33ff57229302ade85e9289efa5576bfb8ebd019509c8ba05d5fa07d31d1f5110bcff291f080c4ad9e06202276a8122c0d6d9ea630610e6949ca996b359a6dbb2fe6a119603774580337681c793b85588bbe6/176/1280x720_2657600/index.m3u8
