@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
     getFirestore, collection, getDocs, query, where, limit,
-    doc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp
+    doc, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Config ──
@@ -546,29 +546,45 @@ document.getElementById('assign-submit').addEventListener('click', async () => {
             `${email} is currently assigned to ${existingToken.id} (${daysLeft} days left). Reassigning will move ${daysLeft} days to this token and unassign the old one. Continue?`,
             async () => {
                 try {
-                    // 1. Copy expiry from old token to new token
-                    if (existingToken.expiresAt) {
-                        await updateDoc(doc(db, "customers", id), {
-                            assignedTo: email,
-                            name: email,
-                            status: 'active',
-                            expiresAt: existingToken.expiresAt
-                        });
-                    } else {
-                        await updateDoc(doc(db, "customers", id), {
+                    // Atomic reassign via Firestore transaction.
+                    // Re-reads both tokens inside the transaction to catch race conditions
+                    // (e.g. another admin reassigning the same user simultaneously).
+                    await runTransaction(db, async (tx) => {
+                        const newTokenRef = doc(db, "customers", id);
+                        const oldTokenRef = doc(db, "customers", existingToken.id);
+                        const newSnap = await tx.get(newTokenRef);
+                        const oldSnap = await tx.get(oldTokenRef);
+                        if (!newSnap.exists()) throw new Error("New token no longer exists");
+                        if (!oldSnap.exists()) throw new Error("Old token no longer exists");
+                        const oldData = oldSnap.data();
+                        const oldAssignedTo = oldData.assignedTo || '';
+                        // Verify the old token is still assigned to this email
+                        if (!oldAssignedTo || oldAssignedTo.toLowerCase() !== email.toLowerCase()) {
+                            throw new Error("Old token is no longer assigned to this user");
+                        }
+                        // 1. Assign new token: copy expiry from old token
+                        const updateData = {
                             assignedTo: email,
                             name: email,
                             status: 'active'
+                        };
+                        if (oldData.expiresAt) {
+                            updateData.expiresAt = oldData.expiresAt;
+                        }
+                        tx.update(newTokenRef, updateData);
+                        // 2. Unassign old token (reset to pool, null expiry)
+                        tx.update(oldTokenRef, {
+                            assignedTo: null,
+                            name: '',
+                            expiresAt: null
                         });
-                    }
-                    // 2. Unassign the old token
-                    await updateDoc(doc(db, "customers", existingToken.id), {
-                        assignedTo: null,
-                        name: ''
                     });
                     showToast(`Reassigned from ${existingToken.id} (${daysLeft} days inherited)`);
                     loadTokens();
-                } catch { showToast('Failed to reassign'); }
+                } catch (err) {
+                    console.error('Reassign failed:', err);
+                    showToast(err?.message?.includes('no longer') ? err.message : 'Failed to reassign');
+                }
             }
         );
         return;

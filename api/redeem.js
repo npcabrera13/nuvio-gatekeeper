@@ -64,11 +64,51 @@ function isExpired(expiresAt) {
   return ms <= Date.now();
 }
 
+// ── Simple in-memory rate limiter (per IP) ──
+// Limits: 10 redeem attempts per IP per 10 minutes.
+// Note: in-memory means each serverless instance has its own counter.
+// For a hobby project this is sufficient defense-in-depth against brute force.
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const RATE_LIMIT_MAX = 10;                    // 10 attempts per window
+const rateLimitMap = new Map(); // ip → { count, firstAttemptTime }
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || (now - entry.firstAttemptTime) > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(ip, { count: 1, firstAttemptTime: now });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    const resetIn = Math.ceil((entry.firstAttemptTime + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { allowed: false, remaining: 0, resetIn };
+  }
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
+}
+
+function getClientIp(req) {
+  return req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+      || req.headers["x-real-ip"]
+      || "unknown";
+}
+
 module.exports = async function handler(req, res) {
   setCors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
+  // Rate limit check (prevents promo code brute-force)
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(ip);
+  if (!rl.allowed) {
+    return res.status(429).json({
+      ok: false,
+      error: "rate_limited",
+      message: `Too many attempts. Please try again in ${rl.resetIn} seconds.`
+    });
   }
 
   let body = req.body;
