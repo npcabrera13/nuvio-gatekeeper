@@ -64,33 +64,56 @@ function isExpired(expiresAt) {
   return ms <= Date.now();
 }
 
-// ── Simple in-memory rate limiter (per IP) ──
+// ── Firestore-based rate limiter (works across serverless instances) ──
 // Limits: 10 redeem attempts per IP per 10 minutes.
-// Note: in-memory means each serverless instance has its own counter.
-// For a hobby project this is sufficient defense-in-depth against brute force.
+// Stores each attempt as a doc in rateLimits/{ip}_{timestamp} with a TTL.
+// Cleans up old entries on each check to keep the collection small.
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const RATE_LIMIT_MAX = 10;                    // 10 attempts per window
-const rateLimitMap = new Map(); // ip → { count, firstAttemptTime }
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || (now - entry.firstAttemptTime) > RATE_LIMIT_WINDOW_MS) {
-    rateLimitMap.set(ip, { count: 1, firstAttemptTime: now });
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
-  }
-  entry.count++;
-  if (entry.count > RATE_LIMIT_MAX) {
-    const resetIn = Math.ceil((entry.firstAttemptTime + RATE_LIMIT_WINDOW_MS - now) / 1000);
-    return { allowed: false, remaining: 0, resetIn };
-  }
-  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
-}
 
 function getClientIp(req) {
   return req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
       || req.headers["x-real-ip"]
       || "unknown";
+}
+
+async function checkRateLimit(ip) {
+  const now = Date.now();
+  const since = now - RATE_LIMIT_WINDOW_MS;
+  // Query recent attempts by this IP
+  const q = query(
+    collection(db, "rateLimits"),
+    where("ip", "==", ip),
+    where("ts", ">", since)
+  );
+  const snap = await getDocs(q);
+  const count = snap.size;
+  if (count >= RATE_LIMIT_MAX) {
+    const oldest = snap.docs.reduce((min, d) => {
+      const t = d.data().ts || 0;
+      return t < min ? t : min;
+    }, now);
+    const resetIn = Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { allowed: false, resetIn: Math.max(1, resetIn) };
+  }
+  // Log this attempt
+  const attemptId = `${ip}_${now}_${Math.random().toString(36).slice(2, 6)}`;
+  try {
+    await setDoc(doc(db, "rateLimits", attemptId), {
+      ip, ts: now, createdAt: serverTimestamp()
+    });
+  } catch (e) {
+    // Non-fatal — if we can't log, still allow the attempt
+    console.error("[rateLimit] log failed:", e.message);
+  }
+  // Best-effort cleanup of old entries (keeps collection small over time)
+  snap.docs.forEach(d => {
+    const t = d.data().ts || 0;
+    if (t < since) {
+      deleteDoc(d.ref).catch(() => {});
+    }
+  });
+  return { allowed: true, remaining: RATE_LIMIT_MAX - count - 1 };
 }
 
 module.exports = async function handler(req, res) {
@@ -100,9 +123,9 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  // Rate limit check (prevents promo code brute-force)
+  // Rate limit check (prevents promo code brute-force across all instances)
   const ip = getClientIp(req);
-  const rl = checkRateLimit(ip);
+  const rl = await checkRateLimit(ip);
   if (!rl.allowed) {
     return res.status(429).json({
       ok: false,
