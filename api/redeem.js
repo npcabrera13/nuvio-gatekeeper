@@ -80,44 +80,43 @@ function getClientIp(req) {
 async function checkRateLimit(ip) {
   const now = Date.now();
   const since = now - RATE_LIMIT_WINDOW_MS;
-  // Query recent attempts by this IP (single field query — no composite index needed)
-  const q = query(
-    collection(db, "rateLimits"),
-    where("ip", "==", ip)
-  );
-  const snap = await getDocs(q);
-  // Filter to recent attempts (within window) client-side
-  let recentCount = 0;
-  let oldest = now;
-  const toDelete = [];
-  snap.docs.forEach(d => {
-    const t = d.data().ts || 0;
-    if (t > since) {
-      recentCount++;
-      if (t < oldest) oldest = t;
-    } else {
-      // Old entry — mark for cleanup
-      toDelete.push(d.ref);
-    }
-  });
-  if (recentCount >= RATE_LIMIT_MAX) {
-    const resetIn = Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000);
-    return { allowed: false, resetIn: Math.max(1, resetIn) };
-  }
-  // Log this attempt
-  const attemptId = `${ip}_${now}_${Math.random().toString(36).slice(2, 6)}`;
+  // Use a transaction to atomically read + count + write.
+  // This avoids the eventual-consistency gap where rapid requests don't see
+  // each other's writes.
   try {
-    await setDoc(doc(db, "rateLimits", attemptId), {
-      ip, ts: now, createdAt: serverTimestamp()
+    const result = await runTransaction(db, async (tx) => {
+      const q = query(collection(db, "rateLimits"), where("ip", "==", ip));
+      const snap = await getDocs(q);
+      let recentCount = 0;
+      let oldest = now;
+      const toDelete = [];
+      snap.docs.forEach(d => {
+        const t = d.data().ts || 0;
+        if (t > since) {
+          recentCount++;
+          if (t < oldest) oldest = t;
+        } else {
+          toDelete.push(d.ref);
+        }
+      });
+      if (recentCount >= RATE_LIMIT_MAX) {
+        const resetIn = Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000);
+        return { allowed: false, resetIn: Math.max(1, resetIn) };
+      }
+      // Log this attempt + cleanup old entries inside the transaction
+      const attemptId = `${ip}_${now}_${Math.random().toString(36).slice(2, 6)}`;
+      tx.set(doc(db, "rateLimits", attemptId), {
+        ip, ts: now, createdAt: serverTimestamp()
+      });
+      toDelete.forEach(ref => tx.delete(ref));
+      return { allowed: true, remaining: RATE_LIMIT_MAX - recentCount - 1 };
     });
+    return result;
   } catch (e) {
-    console.error("[rateLimit] log failed:", e.message);
+    console.error("[rateLimit] transaction failed:", e.message);
+    // On failure, allow the attempt (don't block legit users due to infra issues)
+    return { allowed: true, remaining: 0 };
   }
-  // Best-effort cleanup of old entries
-  toDelete.forEach(ref => {
-    deleteDoc(ref).catch(() => {});
-  });
-  return { allowed: true, remaining: RATE_LIMIT_MAX - recentCount - 1 };
 }
 
 module.exports = async function handler(req, res) {
