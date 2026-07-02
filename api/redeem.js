@@ -80,19 +80,27 @@ function getClientIp(req) {
 async function checkRateLimit(ip) {
   const now = Date.now();
   const since = now - RATE_LIMIT_WINDOW_MS;
-  // Query recent attempts by this IP
+  // Query recent attempts by this IP (single field query — no composite index needed)
   const q = query(
     collection(db, "rateLimits"),
-    where("ip", "==", ip),
-    where("ts", ">", since)
+    where("ip", "==", ip)
   );
   const snap = await getDocs(q);
-  const count = snap.size;
-  if (count >= RATE_LIMIT_MAX) {
-    const oldest = snap.docs.reduce((min, d) => {
-      const t = d.data().ts || 0;
-      return t < min ? t : min;
-    }, now);
+  // Filter to recent attempts (within window) client-side
+  let recentCount = 0;
+  let oldest = now;
+  const toDelete = [];
+  snap.docs.forEach(d => {
+    const t = d.data().ts || 0;
+    if (t > since) {
+      recentCount++;
+      if (t < oldest) oldest = t;
+    } else {
+      // Old entry — mark for cleanup
+      toDelete.push(d.ref);
+    }
+  });
+  if (recentCount >= RATE_LIMIT_MAX) {
     const resetIn = Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000);
     return { allowed: false, resetIn: Math.max(1, resetIn) };
   }
@@ -103,17 +111,13 @@ async function checkRateLimit(ip) {
       ip, ts: now, createdAt: serverTimestamp()
     });
   } catch (e) {
-    // Non-fatal — if we can't log, still allow the attempt
     console.error("[rateLimit] log failed:", e.message);
   }
-  // Best-effort cleanup of old entries (keeps collection small over time)
-  snap.docs.forEach(d => {
-    const t = d.data().ts || 0;
-    if (t < since) {
-      deleteDoc(d.ref).catch(() => {});
-    }
+  // Best-effort cleanup of old entries
+  toDelete.forEach(ref => {
+    deleteDoc(ref).catch(() => {});
   });
-  return { allowed: true, remaining: RATE_LIMIT_MAX - count - 1 };
+  return { allowed: true, remaining: RATE_LIMIT_MAX - recentCount - 1 };
 }
 
 module.exports = async function handler(req, res) {
