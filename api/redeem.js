@@ -64,59 +64,36 @@ function isExpired(expiresAt) {
   return ms <= Date.now();
 }
 
-// ── Firestore-based rate limiter (works across serverless instances) ──
+// ── Rate limiter (in-memory, per-instance) ──
 // Limits: 10 redeem attempts per IP per 10 minutes.
-// Stores each attempt as a doc in rateLimits/{ip}_{timestamp} with a TTL.
-// Cleans up old entries on each check to keep the collection small.
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-const RATE_LIMIT_MAX = 10;                    // 10 attempts per window
+// NOTE: Vercel serverless spins up multiple instances, so this is per-instance
+// rate limiting. It won't stop a distributed attack but does stop a single
+// client hammering the same warm instance. The real protection is the 729M
+// promo code space (brute force is impractical). For true distributed rate
+// limiting, use Vercel KV (Redis) or upgrade the approach.
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitMap = new Map();
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || (now - entry.firstAttemptTime) > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(ip, { count: 1, firstAttemptTime: now });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    const resetIn = Math.ceil((entry.firstAttemptTime + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { allowed: false, resetIn };
+  }
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
+}
 
 function getClientIp(req) {
   return req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
       || req.headers["x-real-ip"]
       || "unknown";
-}
-
-async function checkRateLimit(ip) {
-  const now = Date.now();
-  const since = now - RATE_LIMIT_WINDOW_MS;
-  // Use a transaction to atomically read + count + write.
-  // This avoids the eventual-consistency gap where rapid requests don't see
-  // each other's writes.
-  try {
-    const result = await runTransaction(db, async (tx) => {
-      const q = query(collection(db, "rateLimits"), where("ip", "==", ip));
-      const snap = await getDocs(q);
-      let recentCount = 0;
-      let oldest = now;
-      const toDelete = [];
-      snap.docs.forEach(d => {
-        const t = d.data().ts || 0;
-        if (t > since) {
-          recentCount++;
-          if (t < oldest) oldest = t;
-        } else {
-          toDelete.push(d.ref);
-        }
-      });
-      if (recentCount >= RATE_LIMIT_MAX) {
-        const resetIn = Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000);
-        return { allowed: false, resetIn: Math.max(1, resetIn) };
-      }
-      // Log this attempt + cleanup old entries inside the transaction
-      const attemptId = `${ip}_${now}_${Math.random().toString(36).slice(2, 6)}`;
-      tx.set(doc(db, "rateLimits", attemptId), {
-        ip, ts: now, createdAt: serverTimestamp()
-      });
-      toDelete.forEach(ref => tx.delete(ref));
-      return { allowed: true, remaining: RATE_LIMIT_MAX - recentCount - 1 };
-    });
-    return result;
-  } catch (e) {
-    console.error("[rateLimit] transaction failed:", e.message);
-    // On failure, allow the attempt (don't block legit users due to infra issues)
-    return { allowed: true, remaining: 0 };
-  }
 }
 
 module.exports = async function handler(req, res) {
@@ -128,7 +105,7 @@ module.exports = async function handler(req, res) {
 
   // Rate limit check (prevents promo code brute-force across all instances)
   const ip = getClientIp(req);
-  const rl = await checkRateLimit(ip);
+  const rl = checkRateLimit(ip);
   if (!rl.allowed) {
     return res.status(429).json({
       ok: false,
