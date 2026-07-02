@@ -135,19 +135,29 @@ module.exports = async function handler(req, res) {
     const promo = promoSnap.data();
     const days = Math.max(1, Math.min(365, parseInt(promo.days) || 7));
 
-    // 2. Reject if this customer already has an assigned, non-expired token.
-    //    Prevents trial abuse (one trial per email).
+    // 2. Check if this customer already has an assigned token.
+    //    - If it has a valid (non-expired) expiry → "already_active" (reject)
+    //    - If it has expiresAt: null → pre-assigned by admin, not yet started.
+    //      Extend THAT token with the promo days instead of finding a new one.
     const existingQ = query(
       collection(db, "customers"),
       where("assignedTo", "==", email)
     );
     const existingSnap = await getDocs(existingQ);
+    let preAssignedToken = null;
     let alreadyHasActive = false;
     existingSnap.forEach(d => {
       const data = d.data();
-      if (!isExpired(data.expiresAt) && (data.status || 'active') === 'active') {
+      const status = (data.status || 'active');
+      if (status !== 'active') return; // blocked tokens don't count
+      if (data.expiresAt === null || data.expiresAt === undefined) {
+        // Pre-assigned by admin, no expiry yet → extend this token
+        preAssignedToken = { id: d.id, data };
+      } else if (!isExpired(data.expiresAt)) {
+        // Has a valid expiry → already active
         alreadyHasActive = true;
       }
+      // If expired, neither flag is set — they can redeem to get a fresh token
     });
     if (alreadyHasActive) {
       return res.status(200).json({
@@ -157,10 +167,38 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 3. Find an available Nuvio account (unassigned, active, configured).
-    //    Note: we no longer filter by "not expired" — unassigned tokens have
-    //    expiresAt: null (no expiry while sitting in the pool). The redemption
-    //    sets a fresh expiresAt = now + days, so any prior value is overwritten.
+    // 3a. If user has a pre-assigned token (expiresAt: null), extend it.
+    if (preAssignedToken) {
+      const newExpiry = Timestamp.fromDate(new Date(Date.now() + days * 86400000));
+      try {
+        await runTransaction(db, async (tx) => {
+          const promoRead = await tx.get(promoRef);
+          if (!promoRead.exists()) throw new Error("PROMO_GONE");
+          tx.update(doc(db, "customers", preAssignedToken.id), {
+            expiresAt: newExpiry,
+            status: 'active',
+            assignedVia: 'promo_code',
+            assignedAt: serverTimestamp()
+          });
+          tx.delete(promoRef);
+        });
+        return res.status(200).json({
+          ok: true,
+          message: `Promo code redeemed (${days} days)`,
+          token: preAssignedToken.id,
+          days,
+          expiresAt: newExpiry.toMillis ? newExpiry.toMillis() : null
+        });
+      } catch (err) {
+        if (err && err.message === "PROMO_GONE") {
+          return res.status(200).json({ ok: false, error: "invalid", message: "Promo code was just redeemed. Please try another code." });
+        }
+        console.error("[redeem] pre-assigned extend error:", err);
+        return res.status(500).json({ ok: false, error: "server", message: "Server error" });
+      }
+    }
+
+    // 3b. No pre-assigned token → find an available Nuvio account from the pool.
     const custSnap = await getDocs(collection(db, "customers"));
     let availableToken = null;
     custSnap.forEach(d => {
