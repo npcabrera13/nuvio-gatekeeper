@@ -243,7 +243,7 @@ function renderDesktopTable(tokens) {
             <td>
                 <div class="action-btns">
                     <button class="icon-btn" title="Edit" onclick="openEdit('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                    <button class="icon-btn" title="Renew" onclick="openRenew('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
+                    ${s.isAssigned ? `<button class="icon-btn" title="Renew" onclick="openRenew('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>` : ''}
                     <button class="icon-btn" title="More" onclick="toggleRowMenu('${escapeJs(t.id)}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
                 </div>
                 <div class="row-menu hidden" id="menu-${escapeJs(t.id)}">
@@ -277,7 +277,7 @@ function renderMobileCards(tokens) {
             <div class="token-card-row"><span class="token-card-label">Expires</span><span class="token-card-value">${s.expiry.text}<br><span style="font-size:11px;color:var(--text-dim)">${s.expiry.daysLabel}</span></span></div>
             <div class="token-card-actions">
                 <button class="btn btn-ghost" onclick="openEdit('${escapeJs(t.id)}')">Edit</button>
-                <button class="btn btn-ghost" onclick="openRenew('${escapeJs(t.id)}')">Renew</button>
+                ${s.isAssigned ? `<button class="btn btn-ghost" onclick="openRenew('${escapeJs(t.id)}')">Renew</button>` : ''}
                 <button class="btn btn-ghost" onclick="toggleCardMenu('${escapeJs(t.id)}')">More</button>
             </div>
             <div class="card-menu hidden" id="cmenu-${escapeJs(t.id)}">
