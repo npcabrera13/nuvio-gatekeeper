@@ -1,6 +1,6 @@
 #EXTM3U
 #EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/gma-ph.png" fanart="https://aphrodite.gmanetwork.com/international/2024_international_og_image.png" group-title="PH Local", GMA Network HD
-http://136.158.97.2:6610/001/2/ch00000090990000001093/manifest.mpd?AuthInfo=v87HD9rEhwHiAdYyrP20Tg5pgSMSITY%2FHYvvCWJRp%2BoLvT86fM74ocVChyFS93HUytokK1MIobcue1ImXa0ZEA%3D%3D&version=v1.0&BreakPoint=0&virtualDomain=001.live_hls.zte.com&programid=ch00000000000000001214&contentid=ch00000000000000001214&videoid=ch00000090990000001093&recommendtype=0&userid=1084724632836&boid=001&stbid=02%3A00%3A00%3A00%3A00%3A00&terminalflag=1&profilecode=&usersessionid=FGE3OISG4KGXXX&NeedJITP=1&JITPMediaType=DASH&JITPDRMType=NO
+https://ott.djdoolky76.net/stream/iptv/gma/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
 #EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/a2z-ph.png" fanart="https://www.rappler.com/tachyon/2020/10/a2z-abs-cbn-october-17-2020.jpg" group-title="PH Local", A2Z HD (Kapamilya)
 http://136.239.173.2:6610/001/2/ch00000090990000001087/manifest.mpd?AuthInfo=v87HD9rEhwHiAdYyrP20Tg5pgSMSITY%2FHYvvCWJRp%2BqHRrK8UUahwItHhKpXgPXKytokK1MIobcue1ImXa0ZEA%3D%3D&version=v1.0&BreakPoint=0&virtualDomain=001.live_hls.zte.com&programid=ch00000000000000001176&contentid=ch00000000000000001176&videoid=ch00000090990000001087&recommendtype=0&userid=1287297673984&boid=001&stbid=02%3A00%3A00%3A00%3A00%3A00&terminalflag=1&profilecode=&usersessionid=U4DB4Z0H2EXXXX&NeedJITP=1&JITPMediaType=DASH&JITPDRMType=NO
 #EXTINF:-1 tvg-logo="https://i.imgur.com/bmd4D8Z.jpeg" fanart="https://contents.pep.ph/images2/images2/2022/09/07/cnn-alltv-1662537846.jpg" group-title="PH Local", ALLTV HD
@@ -19,9 +19,33 @@ http://136.239.159.20:6610/001/2/ch00000090990000001080/manifest.mpd?AuthInfo=v8
 http://136.158.97.2:6610/001/2/ch00000090990000001160/manifest.mpd?AuthInfo=v87HD9rEhwHiAdYyrP20Tg5pgSMSITY%2FHYvvCWJRp%2BqJiJmfV%2B93mjmGGmqynSohytokK1MIobcue1ImXa0ZEA%3D%3D&version=v1.0&BreakPoint=0&virtualDomain=001.live_hls.zte.com&programid=ch00000000000000001374&contentid=ch00000000000000001374&videoid=ch00000090990000001160&recommendtype=0&userid=1605694488407&boid=001&stbid=02%3A00%3A00%3A00%3A00%3A00&terminalflag=1&profilecode=&usersessionid=G669IAJA55PXXX&NeedJITP=1&JITPMediaType=DASH&JITPDRMType=NO
 #EXTINF:-1 tvg-logo="https://i.imgur.com/Rhrf4nj.jpeg" fanart="https://i.imgur.com/L8EzHAu.jpeg" group-title="PH Local", INC TV HD
 http://136.239.159.18:6610/001/2/ch00000090990000001092/manifest.mpd?AuthInfo=v87HD9rEhwHiAdYyrP20Tg5pgSMSITY%2FHYvvCWJRp%2BrC5ZD%2FYbS0KSGrFVJUNIMkytokK1MIobcue1ImXa0ZEA%3D%3D&version=v1.0&BreakPoint=0&virtualDomain=001.live_hls.zte.com&programid=ch00000000000000001178&contentid=ch00000000000000001178&videoid=ch00000090990000001092&recommendtype=0&userid=1760058453659&boid=001&stbid=02%3A00%3A00%3A00%3A00%3A00&terminalflag=1&profilecode=&usersessionid=HILNO5G9U9IXXX&NeedJITP=1&JITPMediaType=DASH&JITPDRMType=NO
-#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/cltv-ph.png" group-title="PH Regional", CLTV 36
-https://live.cltv36.tv:5443/LiveApp/streams/cltvlive.m3u8
+#EXTINF:-1 tvg-logo="https://i.imgur.com/fsycEm0.jpeg" fanart="https://centralluzon.politiko.com.ph/wp-content/uploads/2022/05/cltv-anniv.jpg" group-title="PH Regional", CLTV 36
+https://ott.djdoolky76.net/stream/iptv/cltv36/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
 #EXTINF:-1 tvg-logo="https://i.imgur.com/G7lONcu.png" group-title="PH Regional", Vegas Life TV
 https://streams.comclark.com/pknsd/vegaslifetv/playlist.m3u8
 #EXTINF:-1 tvg-logo="https://ml02dtnc01wc.i.optimole.com/w:512/h:512/q:mauto/https://mindanownetwork.com/wp-content/uploads/2024/11/Mindanow-Network-Logo-Vertical.png" group-title="PH Regional", Mindanow Network TV
 https://streams.comclark.com/overlay/mindanow/playlist.m3u8
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/GMA_News_2026_logo.svg/250px-GMA_News_2026_logo.svg.png" fanart="https://sfile.chatglm.cn/images-ppt/02c17fe1cb74.png" group-title="PH News", GMA News TV
+https://ott.djdoolky76.net/stream/iptv/gmanewstv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/gtv-ph.png" fanart="https://aphrodite.gmanetwork.com/gtv_assets/img/gtv-default-logo.png" group-title="PH Local", GTV
+https://ott.djdoolky76.net/stream/iptv/gtv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/kapamilya-channel-ph.png" fanart="https://i.imgur.com/WgtCdCH.png" group-title="PH Local", ABS-CBN (Kapamilya Channel)
+https://ott.djdoolky76.net/stream/iptv/kapamilyachannel/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/tv5-ph.png" fanart="https://www.adobomagazine.com/wp-content/uploads/2000/08/TV5-Format-for-Happiness-Homegrown-Programs-2024-HERO.jpg" group-title="PH Local", TV5 HD
+https://ott.djdoolky76.net/stream/iptv/tv5hd/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/net25-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/7be78bb37fa7.png" group-title="PH Local", NET25
+https://ott.djdoolky76.net/stream/iptv/net25/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/ibc-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/0859ac854d57.jpg" group-title="PH Local", IBC13
+https://ott.djdoolky76.net/stream/iptv/ibc13/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/rptv-ph.png" fanart="https://www.rappler.com/tachyon/2024/02/RPTV-Channel-Launch-KV.jpg" group-title="PH Local", RPTV
+https://ott.djdoolky76.net/stream/iptv/rptv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/untv-ph.png" fanart="https://cdn.prod.website-files.com/67aadda37ed3fa65ace7d4a8/68786cc702fbbd2fcc837c96_default-ogimage.jpg" group-title="PH Local", UNTV
+https://ott.djdoolky76.net/stream/iptv/untv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/dzmm-teleradyo-ph.png" fanart="https://www.rappler.com/tachyon/2025/05/dzmm-teleradyo-comeback-may-2025.jpg" group-title="PH News", DZMM Teleradyo
+https://ott.djdoolky76.net/stream/iptv/dzmmteleradyo/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://i.imgur.com/JrRd7qs.jpeg" fanart="https://i.imgur.com/fgsxCKp.jpeg" group-title="PH Entertainment", GMA Life TV
+https://ott.djdoolky76.net/stream/iptv/gmalifetv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://i.imgur.com/8rFMKyj.jpeg" fanart="https://sfile.chatglm.cn/images-ppt/0ee386c76701.png" group-title="PH Entertainment", GMA Pinoy TV
+https://ott.djdoolky76.net/stream/iptv/gmapinoytv/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQt9s3BhhAtxF4XPtCD16xQKoXnvsa7GPypGi51V124Aw&s=10" fanart="https://sfile.chatglm.cn/images-ppt/dc06030cba9e.jpg" group-title="PH News", SMNI
+https://ott.djdoolky76.net/stream/iptv/smni/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e

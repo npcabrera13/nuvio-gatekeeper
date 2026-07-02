@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/hbo-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/298bab9a040b.jpg" group-title="Movies", HBO
+https://ott.djdoolky76.net/stream/iptv/hbohd/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://i.imgur.com/TBTMH9w.jpeg" fanart="https://sfile.chatglm.cn/images-ppt/2ad93c13b592.jpg" group-title="Movies", CineMo Global
+https://ott.djdoolky76.net/stream/iptv/cinemoglobal/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/viva-cinema-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/76912b315338.jpg" group-title="Movies", Viva Cinema
+https://ott.djdoolky76.net/stream/iptv/vivacinema/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/cinemax-us.png" fanart="https://sfile.chatglm.cn/images-ppt/9f26f0acc17d.jpeg" group-title="Movies", Cinemax
+https://ott.djdoolky76.net/stream/iptv/cinemax/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
+#EXTINF:-1 tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/philippines/tmc-ph.png" fanart="https://sfile.chatglm.cn/images-ppt/7badfce8c546.jpg" group-title="Movies", Tagalized Movie Channel
+https://ott.djdoolky76.net/stream/iptv/tmc/master.m3u8?u=udpv4&p=db8b8839b5a336adbd1b3d7eb78863623b5068cba7b65031c2b753d5320e2c5e
